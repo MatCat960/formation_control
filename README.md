@@ -16,7 +16,35 @@ Robots within the MRS are split into clusters for cooperative area coverage. The
 
 <img src="pics/area_inters.png" width="425"/>
 
-### Results
+1. Launch the simulation environment:
+```bash
+roslaunch formation_control drones_sim.launch
+```
+
+2. Launch the low-level control node for single drones:
+```bash
+roslaunch formation_control formation_control.launch
+```
+3. Define the probability density of the environment with one of the following:
+
+- Drawing the region as a polygon on a GUI:
+```bash
+rosrun gmm_coverage interface.py
+```
+
+- Defining different spots of interest:
+```bash
+rosrun gmm_coverage clusters_gmm.py
+```
+
+4. Launch the high-level control node to move the virtual agent:
+```bash
+roslaunch formation_control virtual_agent.launch
+```
+
+
+
+## Results
 
 Robots reach a configuration that maximizes the cooperative coverage of areas of interest:
 
