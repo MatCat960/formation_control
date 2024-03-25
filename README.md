@@ -13,4 +13,5 @@ Formation Control for cooperative area coverage by a Multi-Robot System.
 ## How it works
 
 Robots within the MRS are split into clusters for cooperative area coverage. The collectively monitored area results from the intersection of FoVs of robots in a cluster:
-`![Cluster's sensing model](pics/area_inters.png)`
+
+![picture](pics/area_inters.png)
