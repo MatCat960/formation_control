@@ -20,4 +20,4 @@ Robots within the MRS are split into clusters for cooperative area coverage. The
 
 Robots reach a configuration that maximizes the cooperative coverage of areas of interest:
 
-![res1](pics/res1.png =50%x) ![res2](pics/res2.png =50%x) 
+<img src="pics/res1.png" width="425"/> <img src="pics/res2.png" width="425"/> 
