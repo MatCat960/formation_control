@@ -181,6 +181,24 @@ target_link_libraries(virtual_agent
   OsqpEigen::OsqpEigen
   )
 
+add_executable(drone_sim src/drone_sim.cpp)
+add_dependencies(drone_sim ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(drone_sim
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+  OsqpEigen::OsqpEigen
+  )
+
+  add_executable(supervisor_iso src/supervisor_iso.cpp)
+  add_dependencies(supervisor_iso ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  target_link_libraries(supervisor_iso
+    ${catkin_LIBRARIES}
+    ${PROJECT_NAME}
+    OsqpEigen::OsqpEigen
+    )
+  
+
+
 
 
 #############

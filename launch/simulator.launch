@@ -8,10 +8,10 @@
     <arg name="AREA_SIZE_y" default="60.0" />
     <arg name="AREA_LEFT" default="-30.0" />
     <arg name="AREA_BOTTOM" default="-30.0" />
-    <arg name="SAVE_POS" default="true" />
+    <arg name="SAVE_POS" default="false" />
     <arg name="GUI" default="true"/>  
 
-    <node name="supervisor"  pkg="coverage_unimore_nyu" type="supervisor_iso" output="screen">
+    <node name="supervisor"  pkg="formation_control" type="supervisor_iso" output="screen">
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)" />
         <param name="ROBOT_RANGE" value="$(arg ROBOT_RANGE)" />
         <param name="ROBOT_FOV" value="$(arg ROBOT_FOV)" />
@@ -42,7 +42,7 @@
         <remap from="/turtlebot19/odom" to="/hummingbird19/ground_truth/odometry"/>
     </node>
 
-    <include file="$(find torch_pf)/launch/drones_sim2.launch">
+    <include file="$(find formation_control)/launch/drones_sim.launch">
         <arg name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)"/>
         <arg name="GUI" value="$(arg GUI)"/>
     </include>
