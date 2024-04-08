@@ -1,0 +1,5 @@
+# ignore output files from slurm
+*.out
+
+# ignore slurm scripts
+cpu_job.sh
