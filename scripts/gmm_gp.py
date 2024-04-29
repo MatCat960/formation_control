@@ -24,7 +24,7 @@ vmax = 1.5
 path = Path("/unimore_home/mcatellani/gp_formation_coverage")
 GAMMA_RATE = 0.05        # forgetting factor
 
-TIME_VAR = False
+TIME_VAR = True
 
 
 

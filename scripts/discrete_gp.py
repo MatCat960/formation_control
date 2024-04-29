@@ -79,7 +79,7 @@ for i in range(0, GRID_SIZE**2, GRID_SIZE):
         dist_t = np.linalg.norm(target - x_ij)
         if dist_t < 2.0:
           rnd = np.random.rand()
-          if rnd < 0.5:             # only 20% of detections
+          if rnd < 0.3:             # only 20% of detections
             Y[i+j] = 1
 
 # Initialize forgetting factors
