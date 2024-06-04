@@ -23,9 +23,11 @@ ROBOTS_NUM = 6
 AREA_W = 20.0
 vmax = 3.0
 wmax = 1.0
-path = Path().resolve()
+
 GAMMA_RATE = 0.05        # forgetting factor
 TIME_VAR = False
+path = Path().resolve()
+figpath = path / "pics/limited/timevar" if TIME_VAR else path / "pics/limited/fixed" 
 
 
 ### UTILITY FUCTIONS
@@ -303,7 +305,8 @@ for s in range(1, NUM_STEPS+1):
     vel = Kp * (centr - robot)
     vel[0] = max(-vmax, min(vmax, vel[0]))
     vel[1] = max(-vmax, min(vmax, vel[1]))
-    th_diff = math.atan2(centr[1], centr[0]) - (thetas[idx] + math.pi)
+    th_des = math.atan2(centr[1]-robot[1], centr[0]-robot[0])
+    th_diff = th_des - thetas[idx]
     if th_diff > math.pi:
       th_diff -= 2*math.pi
     w = max(-wmax, min(wmax, Kp*th_diff))
@@ -323,7 +326,7 @@ for s in range(1, NUM_STEPS+1):
   ax.set_xlim([0, AREA_W])
   ax.set_ylim([0, AREA_W])
   plt.legend(loc="upper right")
-  plt.savefig(path / f"pics/limited/img{s}.png")
+  plt.savefig(figpath / f"img{s}.png")
   # plt.show()
 
 #   plt.scatter(points[:, 0], points[:, 1])
@@ -344,7 +347,7 @@ for region in poly_regions:
   plt.plot(x, y, c="tab:red")
 
 
-plt.savefig(path / "pics/limited/final.png")
+plt.savefig(figpath / "final.png")
 
 # plt.plot([xmin, xmax], [ymin, ymin])
 # plt.plot([xmax, xmax], [ymin, ymax])
