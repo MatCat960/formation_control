@@ -29,7 +29,7 @@ GAMMA_RATE = 0.05        # forgetting factor
 TIME_VAR = False
 MOVING_TARGET = True
 TARGETS_NUM = 3
-DETECTION_PROB = 0.5
+DETECTION_PROB = 0.75
 path = Path().resolve()
 figpath = path / "pics/limited/timevar" if TIME_VAR else path / "pics/limited/fixed" 
 
@@ -359,20 +359,26 @@ for s in range(1, NUM_STEPS+1):
       ax.scatter(fov_ctr[0], fov_ctr[1], marker='x', c="tab:purple", zorder=10)
 
     dist = np.linalg.norm(fov_ctr-centr)
-    Kp = 0.8
+    Kp = 1.0
     vel = Kp * (centr - fov_ctr)
     vel[0] = max(-vmax, min(vmax, vel[0]))
     vel[1] = max(-vmax, min(vmax, vel[1]))
     th_des = math.atan2(centr[1]-robot[1], centr[0]-robot[0])
     th_diff = th_des - thetas[idx]
     if th_diff > math.pi:
-      th_diff = -th_diff
+      th_diff -= 2*np.pi
+    elif th_diff < -math.pi:
+      th_diff += 2*np.pi
     w = max(-wmax, min(wmax, Kp*th_diff))
 
 
 
     points[idx, :] = robot + vel*dt
     thetas[idx] += w * dt
+    if thetas[idx] > math.pi:
+      thetas[idx] -= 2*np.pi
+    elif thetas[idx] < -math.pi:
+      thetas[idx] += 2*np.pi
 
     if dist > 0.1:
       conv = False
@@ -381,8 +387,8 @@ for s in range(1, NUM_STEPS+1):
   # Move targets
   if MOVING_TARGET:
     for i in range(targets.shape[0]):
-      new_x = targets[i, 0] + 0.5*vmax * np.cos(th_targets[i]) * dt
-      new_y = targets[i, 1] + 0.5*vmax * np.sin(th_targets[i]) * dt
+      new_x = targets[i, 0] + 0.25*vmax * np.cos(th_targets[i]) * dt
+      new_y = targets[i, 1] + 0.25*vmax * np.sin(th_targets[i]) * dt
 
       # check if outside
       if new_x < 1.0:
