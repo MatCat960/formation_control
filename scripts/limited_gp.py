@@ -27,9 +27,9 @@ dt = 0.2
 
 GAMMA_RATE = 0.05        # forgetting factor
 TIME_VAR = False
-MOVING_TARGET = False
+MOVING_TARGET = True
 TARGETS_NUM = 3
-DETECTION_PROB = 0.75
+DETECTION_PROB = 0.5
 path = Path().resolve()
 figpath = path / "pics/limited/timevar" if TIME_VAR else path / "pics/limited/fixed" 
 
@@ -74,9 +74,9 @@ def insideFOV(robot, target, fov, range):
     return 0
 
   xrel = dx * math.cos(phi) + dy * math.sin(phi)
-  yrel = -dy * math.sin(phi) + dy * math.cos(phi)
+  yrel = -dx * math.sin(phi) + dy * math.cos(phi)
   angle = abs(math.atan2(yrel, xrel))
-  if (angle <= fov_rad) and (xrel >= 0.0):
+  if (angle <= fov_rad*0.5) and (xrel >= 0.0):
     return 1
   else:
     return 0
@@ -146,17 +146,18 @@ for i in range(0, GRID_SIZE**2, GRID_SIZE):
             if rnd < DETECTION_PROB:
               Y[i+j] = 1
 '''              
-for target in targets:
-  target_detected = False
-  for rbt in range(ROBOTS_NUM):
-    if insideFOV(np.append(points[rbt], thetas[rbt]), target, fov_deg, ROBOT_RANGE):
-      target_detected = True
-  if target_detected:
-    for i in range(0, GRID_SIZE**2, GRID_SIZE):
-      X[i:i+GRID_SIZE, 0] = AREA_W*i/(GRID_SIZE**2)
-      for j in range(0, GRID_SIZE):
-        X[i+j, 1] = AREA_W*j/GRID_SIZE
-        x_ij = X[i+j, :]
+
+for i in range(0, GRID_SIZE**2, GRID_SIZE):
+  X[i:i+GRID_SIZE, 0] = AREA_W*i/(GRID_SIZE**2)
+  for j in range(0, GRID_SIZE):
+    X[i+j, 1] = AREA_W*j/GRID_SIZE
+    x_ij = X[i+j, :]
+    for target in targets:
+      target_detected = False
+      for rbt in range(ROBOTS_NUM):
+        if insideFOV(np.append(points[rbt], thetas[rbt]), target, fov_deg, ROBOT_RANGE):
+          target_detected = True
+      if target_detected:
         if np.linalg.norm(target - x_ij) < 2.0:
           rnd = np.random.rand()
           if rnd < DETECTION_PROB:             # only 30% of detections
@@ -183,6 +184,8 @@ gammas = np.zeros_like(Y)
 
 # for _ in range(ROBOTS_NUM):
 #   detections_ids.append([])
+
+
 
 for s in range(1, NUM_STEPS+1):
   print(f"*** Step {s} ***")
@@ -242,10 +245,15 @@ for s in range(1, NUM_STEPS+1):
   y_prob = gp.predict_proba(X)
   probs = y_prob[:, 1]
 
+
   # Add forgetting factor
   if TIME_VAR:
     gammas[detected == 0] += 0.1 * (probs[detected == 0] - 0.5)
     probs[detected == 0] -= gammas[detected == 0]
+
+  y_prob_vis = probs
+  ax.scatter(X[:, 0], X[:, 1], c=y_prob_vis, cmap="YlOrRd", vmin=0.0, vmax=1.0, zorder=0)
+  
 
 
   # fig, axs = plt.subplots(2, ROBOTS_NUM//2, figsize=(16,9))
@@ -270,7 +278,7 @@ for s in range(1, NUM_STEPS+1):
     x,y = poly.exterior.xy
     # plt.plot(x, y, c='tab:orange')
     # robot = np.array([-18.0, -12.0])
-    robot = vor.points[idx]
+    robot = points[idx]
     # plt.scatter(robot[0], robot[1])
 
     # Intersect with robot range
@@ -304,28 +312,22 @@ for s in range(1, NUM_STEPS+1):
     X_voro = X[voronoi_ids]
     # y_probs_voro = y_prob[voronoi_ids]
     y_probs_voro = probs[voronoi_ids]
+    y_probs_voro[y_probs_voro > 0.55] *= 10.0
     A = 0.0
     Cx = 0.0; Cy = 0.0
     for j in range(X_voro.shape[0]):
-      # A += y_probs_voro[j, 1]
-      # Cx += X_voro[j, 0] * y_probs_voro[j,1]
-      # Cy += X_voro[j, 1] * y_probs_voro[j,1]
       A += y_probs_voro[j]
       Cx += X_voro[j, 0] * y_probs_voro[j]
       Cy += X_voro[j, 1] * y_probs_voro[j]
       
-
-
     Cx = Cx / A
     Cy = Cy / A
 
     # Save fig
-    y_prob_vis = probs
     # y_prob_vis[np.random.randint(y_prob_vis.shape[0])] = 0.0
     # y_prob_vis[np.random.randint(y_prob_vis.shape[0])] = 1.0
     # axs[row, idx-row*ROBOTS_NUM].scatter(X[:, 0], X[:, 1], c=y_prob_vis, cmap="YlOrRd")
     # axs[row, row*ROBOTS_NUM+i].set_title("Probability")
-    ax.scatter(X_voro[:, 0], X_voro[:, 1], c=y_probs_voro, cmap="YlOrRd", vmin=0.0, vmax=1.0, zorder=0)
     if idx==0:
       ax.scatter(robot[0], robot[1], marker=(3, 0, thetas[idx]), label="Robot", c="tab:blue", zorder=10)
       ax.scatter(Cx, Cy, label="Centroid", c="tab:blue", marker="+", zorder=10)
@@ -400,24 +402,23 @@ for s in range(1, NUM_STEPS+1):
       targets[i] = [new_x, new_y]
     targets_hist = np.concatenate((targets_hist, np.expand_dims(targets, 0)))
 
-    # Update simulated detections
-    # if MOVING_TARGET:
-    Y = np.zeros(GRID_SIZE**2)
-    for target in targets:
-      target_detected = False
-      for rbt in range(ROBOTS_NUM):
-        if insideFOV(np.append(points[rbt], thetas[rbt]), target, fov_deg, ROBOT_RANGE):
-          target_detected = True
-      if target_detected:
-        for i in range(0, GRID_SIZE**2, GRID_SIZE):
-          # X[i:i+GRID_SIZE, 0] = AREA_W*i/(GRID_SIZE**2)
-          for j in range(0, GRID_SIZE):
-            # X[i+j, 1] = AREA_W*j/GRID_SIZE
-            x_ij = X[i+j, :]
-            if np.linalg.norm(target - x_ij) < 2.0:
-              rnd = np.random.rand()
-              if rnd < DETECTION_PROB:             # only 30% of detections
-                Y[i+j] = 1
+  # Update simulated detections
+  Y = np.zeros(GRID_SIZE**2)
+  for target in targets:
+    target_detected = False
+    for rbt in range(ROBOTS_NUM):
+      if insideFOV(np.append(points[rbt], thetas[rbt]), target, fov_deg, ROBOT_RANGE):
+        target_detected = True
+    if target_detected:
+      for i in range(0, GRID_SIZE**2, GRID_SIZE):
+        # X[i:i+GRID_SIZE, 0] = AREA_W*i/(GRID_SIZE**2)
+        for j in range(0, GRID_SIZE):
+          # X[i+j, 1] = AREA_W*j/GRID_SIZE
+          x_ij = X[i+j, :]
+          if np.linalg.norm(target - x_ij) < 2.0:
+            rnd = np.random.rand()
+            if rnd < DETECTION_PROB:             # only 30% of detections
+              Y[i+j] = 1
     
 
   # Save positions for visualization
