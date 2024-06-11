@@ -186,7 +186,7 @@ probs_old = 0.5*np.ones_like(Y)       # initialize previous prob to 0.5
 # for _ in range(ROBOTS_NUM):
 #   detections_ids.append([])
 
-
+detections_ids = []
 
 for s in range(1, NUM_STEPS+1):
   print(f"*** Step {s} ***")
@@ -207,7 +207,7 @@ for s in range(1, NUM_STEPS+1):
   poly_regions = []
 
   detected = np.zeros((Y.shape[0]), dtype=bool)
-  detections_ids = []
+  
 
   # Simulate cooperative detections inside each robots sensing region
   for i in range(X.shape[0]):
@@ -369,6 +369,7 @@ for s in range(1, NUM_STEPS+1):
     vel = Kp * (centr - fov_ctr)
     vel[0] = max(-vmax, min(vmax, vel[0]))
     vel[1] = max(-vmax, min(vmax, vel[1]))
+    '''
     th_des = math.atan2(centr[1]-robot[1], centr[0]-robot[0])
     th_diff = th_des - thetas[idx]
     if th_diff > math.pi:
@@ -376,11 +377,19 @@ for s in range(1, NUM_STEPS+1):
     elif th_diff < -math.pi:
       th_diff += 2*np.pi
     w = max(-wmax, min(wmax, Kp*th_diff))
+    '''
+    # SFL
+    b = 0.5*ROBOT_RANGE
+    T = np.array([[math.cos(thetas[idx]), math.sin(thetas[idx])], [-1/b*math.sin(thetas[idx]), 1/b*math.cos(thetas[idx])]])
+    # print("T shape: ", T.shape)
+    vw = np.matmul(T, vel)
+    # print("Final vel shape: ", vw.shape)
+    vw[0] = max(-vmax, min(vmax, Kp*vw[0]))         # linear vel
+    vw[1] = max(-wmax, min(wmax, Kp*vw[1]))         # angular vel
 
 
-
-    points[idx, :] = robot + vel*dt
-    thetas[idx] += w * dt
+    points[idx, :] = robot + vw[0]*np.array([math.cos(thetas[idx]), math.sin(thetas[idx])])*dt
+    thetas[idx] += vw[1] * dt
     if thetas[idx] > math.pi:
       thetas[idx] -= 2*np.pi
     elif thetas[idx] < -math.pi:
