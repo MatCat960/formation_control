@@ -26,8 +26,8 @@ wmax = 1.0
 dt = 0.2
 
 GAMMA_RATE = 0.05        # forgetting factor
-TIME_VAR = False
-MOVING_TARGET = True
+TIME_VAR = True
+MOVING_TARGET = False
 TARGETS_NUM = 3
 DETECTION_PROB = 0.75
 path = Path().resolve()
@@ -167,6 +167,7 @@ for i in range(0, GRID_SIZE**2, GRID_SIZE):
 
 # Initialize forgetting factors
 gammas = np.zeros_like(Y)
+probs_old = 0.5*np.ones_like(Y)       # initialize previous prob to 0.5
 
 
 
@@ -248,8 +249,13 @@ for s in range(1, NUM_STEPS+1):
 
   # Add forgetting factor
   if TIME_VAR:
-    gammas[detected == 0] += 0.1 * (probs[detected == 0] - 0.5)
-    probs[detected == 0] -= gammas[detected == 0]
+    # gammas[detected == 0] += 0.1 * (probs[detected == 0] - 0.5)
+    # probs[detected == 0] -= gammas[detected == 0]
+    # gammas[detected == 0] += 0.05
+    # probs[(detected == 0) & (probs > 0.5)] -= gammas[(detected == 0) & (probs > 0.5)]
+    # probs[(detected == 0) & (probs < 0.5)] += gammas[(detected == 0) & (probs < 0.5)]
+    probs[detected == 0] = probs_old[detected == 0] - 0.1*(probs_old[detected == 0] - 0.5)
+    probs_old = probs
 
   y_prob_vis = probs
   ax.scatter(X[:, 0], X[:, 1], c=y_prob_vis, cmap="YlOrRd", vmin=0.0, vmax=1.0, zorder=0)
@@ -312,7 +318,7 @@ for s in range(1, NUM_STEPS+1):
     X_voro = X[voronoi_ids]
     # y_probs_voro = y_prob[voronoi_ids]
     y_probs_voro = probs[voronoi_ids]
-    y_probs_voro[y_probs_voro > 0.55] *= 10.0
+    y_probs_voro[y_probs_voro > 0.6] *= 10.0
     A = 0.0
     Cx = 0.0; Cy = 0.0
     for j in range(X_voro.shape[0]):
