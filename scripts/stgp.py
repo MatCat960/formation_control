@@ -23,7 +23,7 @@ ROBOTS_NUM = 8
 AREA_W = 20.0
 vmax = 3.0
 wmax = 1.0
-dt = 0.2
+dt = 0.5
 
 GAMMA_RATE = 0.05        # forgetting factor
 TIME_VAR = False
@@ -133,7 +133,7 @@ train_ids = []
 GRID_SIZE = 100
 X = np.zeros((GRID_SIZE**2, 2)) 
 Y = np.zeros(GRID_SIZE**2)
-times = np.zeros(GRID_SIZE**2)
+times = -np.inf * np.ones(GRID_SIZE**2)
 t_now = 0.0
 '''
 for i in range(0, GRID_SIZE**2, GRID_SIZE):
@@ -333,7 +333,7 @@ for s in range(1, NUM_STEPS+1):
     X_voro = X[voronoi_ids]
     # y_probs_voro = y_prob[voronoi_ids]
     y_probs_voro = probs[voronoi_ids]
-    y_probs_voro[y_probs_voro > 0.6] *= 20.0
+    y_probs_voro[y_probs_voro > 0.5] *= 20.0
     A = 0.0
     Cx = 0.0; Cy = 0.0
     for j in range(X_voro.shape[0]):
@@ -381,7 +381,7 @@ for s in range(1, NUM_STEPS+1):
 
     dist = np.linalg.norm(fov_ctr-centr)
     Kp = 1.0
-    vel = Kp * (centr - fov_ctr)
+    vel = centr - fov_ctr
     vel[0] = max(-vmax, min(vmax, vel[0]))
     vel[1] = max(-vmax, min(vmax, vel[1]))
     '''
@@ -404,6 +404,8 @@ for s in range(1, NUM_STEPS+1):
 
 
     points[idx, :] = robot + vw[0]*np.array([math.cos(thetas[idx]), math.sin(thetas[idx])])*dt
+    points[idx, 0] = max(0, min(AREA_W, points[idx, 0]))
+    points[idx, 1] = max(0, min(AREA_W, points[idx, 1]))
     thetas[idx] += vw[1] * dt
     if thetas[idx] > math.pi:
       thetas[idx] -= 2*np.pi
@@ -419,8 +421,8 @@ for s in range(1, NUM_STEPS+1):
   # Move targets
   if MOVING_TARGET:
     for i in range(targets.shape[0]):
-      new_x = targets[i, 0] + 0.25*vmax * np.cos(th_targets[i]) * dt
-      new_y = targets[i, 1] + 0.25*vmax * np.sin(th_targets[i]) * dt
+      new_x = targets[i, 0] + 0.1*vmax * np.cos(th_targets[i]) * dt
+      new_y = targets[i, 1] + 0.1*vmax * np.sin(th_targets[i]) * dt
 
       # check if outside
       if new_x < 1.0:
@@ -440,8 +442,22 @@ for s in range(1, NUM_STEPS+1):
       targets[i] = [new_x, new_y]
     targets_hist = np.concatenate((targets_hist, np.expand_dims(targets, 0)))
 
-  # Update simulated detections
-  Y = np.zeros(GRID_SIZE**2)
+  
+  # Set values inside FoVs to 0
+  for i in range(X.shape[0]):
+    x_i = X[i, :]
+    x_pt = Point(X[i, 0], X[i, 1])
+    for j in range(ROBOTS_NUM):
+      # robot = vor.points[j]
+      robot = points[j]
+      # d = np.linalg.norm(robot - x_i)
+      # if d <= ROBOT_RANGE: 
+      #   detected[i] = True
+      if insideFOV(np.append(robot, thetas[j]), x_i, fov_deg, ROBOT_RANGE):
+        Y[i] = 0.0
+
+# Update simulated detections
+  # Y = np.zeros(GRID_SIZE**2)
   for target in targets:
     target_detected = False
     for rbt in range(ROBOTS_NUM):
@@ -458,6 +474,8 @@ for s in range(1, NUM_STEPS+1):
             if rnd < DETECTION_PROB:             # only 30% of detections
               Y[i+j] = 1
               # times[i+j] = t_now
+    
+    
     
 
   # Save positions for visualization
