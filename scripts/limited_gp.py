@@ -27,7 +27,7 @@ dt = 0.2
 
 GAMMA_RATE = 0.05        # forgetting factor
 TIME_VAR = True
-MOVING_TARGET = False
+MOVING_TARGET = True
 TARGETS_NUM = 3
 DETECTION_PROB = 0.75
 path = Path().resolve()
@@ -165,6 +165,10 @@ for i in range(0, GRID_SIZE**2, GRID_SIZE):
     # if x_ij[0] <= 5.0 and x_ij[1] <= 5.0:
     #   train_ids.append(i+j)
 
+
+gp = GaussianProcessClassifier()
+
+
 # Initialize forgetting factors
 gammas = np.zeros_like(Y)
 probs_old = 0.5*np.ones_like(Y)       # initialize previous prob to 0.5
@@ -238,7 +242,6 @@ for s in range(1, NUM_STEPS+1):
 
 
   ### Training
-  gp = GaussianProcessClassifier()
   gp.fit(X_train, y_train)
 
   # Prediction on the whole environment
@@ -254,7 +257,7 @@ for s in range(1, NUM_STEPS+1):
     # gammas[detected == 0] += 0.05
     # probs[(detected == 0) & (probs > 0.5)] -= gammas[(detected == 0) & (probs > 0.5)]
     # probs[(detected == 0) & (probs < 0.5)] += gammas[(detected == 0) & (probs < 0.5)]
-    probs[detected == 0] = probs_old[detected == 0] - 0.1*(probs_old[detected == 0] - 0.5)
+    probs[detected == 0] = probs_old[detected == 0] - 0.05*(probs_old[detected == 0] - 0.5)
     probs_old = probs
 
   y_prob_vis = probs
