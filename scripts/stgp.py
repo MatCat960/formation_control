@@ -4,7 +4,7 @@ import os
 
 # GP stuff
 from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF, DotProduct
+from sklearn.gaussian_process.kernels import RBF, DotProduct, Product
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.linear_model import LogisticRegression
 
@@ -169,9 +169,8 @@ for i in range(0, GRID_SIZE**2, GRID_SIZE):
     # if x_ij[0] <= 5.0 and x_ij[1] <= 5.0:
     #   train_ids.append(i+j)
 
-
+kernel = 1.0 * RBF([1.0, 1.0, 1.0])
 gp = GaussianProcessClassifier()
-
 
 # Initialize forgetting factors
 gammas = np.zeros_like(Y)
@@ -416,7 +415,7 @@ for s in range(1, NUM_STEPS+1):
       conv = False
 
   # Update time
-  t_now += dt
+  t_now += dt * 0.5
   
   # Move targets
   if MOVING_TARGET:
@@ -454,7 +453,9 @@ for s in range(1, NUM_STEPS+1):
       # if d <= ROBOT_RANGE: 
       #   detected[i] = True
       if insideFOV(np.append(robot, thetas[j]), x_i, fov_deg, ROBOT_RANGE):
-        Y[i] = 0.0
+        rnd = np.random.rand()
+        if rnd < 0.75:
+          Y[i] = 0.0
 
 # Update simulated detections
   # Y = np.zeros(GRID_SIZE**2)
