@@ -55,7 +55,7 @@ private:
     Eigen::MatrixXd agents;
 
     int ROBOTS_NUM = 3;
-    int CLUSTERS_NUM = 2;
+    int CLUSTERS_NUM = 4;
     int CLUSTER_ID = 0;
     int ROBOT_ID = 0;
     int OBSTACLES_NUM = 5;
@@ -72,7 +72,7 @@ private:
     double GAUSS_Y = -5.0;
     double GAUSS_COV = 2.0;
 
-    double dt = 0.1;
+    double dt = 0.01;
     bool got_gmm = false;
 
 

@@ -2,12 +2,13 @@
 <launch>
     
     <arg name="ROBOTS_NUM" default="3" />
-    <arg name="CLUSTERS_NUM" default="4" />
+    <arg name="CLUSTERS_NUM" default="1" />
     <arg name="OBSTACLES_NUM" default="2" />
     <arg name="ROBOT_RANGE" default="100.0" />
     <arg name="ROBOT_FOV" default="360.0" />
+    <arg name="SAVE_LOGS" default="true" />
 
-    <node name="formation_control_node_0"  pkg="formation_control" type="formation_control_node">
+    <node name="formation_control_node_0"  pkg="formation_control" type="formation_control_node" output="screen">
         <remap from="/odom" to="/hummingbird0/ground_truth/odometry" />
         <remap from="/cmd_vel_out" to="/hummingbird0/autopilot/velocity_command" />
         <remap from="/target" to="/cluster0/virtual_agent" />
@@ -17,6 +18,7 @@
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)" />
         <param name="OBSTACLES_NUM" value="$(arg OBSTACLES_NUM)" />
         <param name="CLUSTERS_NUM" value="$(arg CLUSTERS_NUM)" />
+        <param name="SAVE_LOGS" value="$(arg SAVE_LOGS)" />
     </node>
     <node name="formation_control_node_1"  pkg="formation_control" type="formation_control_node">
         <remap from="/odom" to="/hummingbird1/ground_truth/odometry" />
@@ -28,6 +30,7 @@
         <param name="OBSTACLES_NUM" value="$(arg OBSTACLES_NUM)" />
         <param name="CLUSTERS_NUM" value="$(arg CLUSTERS_NUM)" />
         <param name="ID" value="1" />
+        <param name="SAVE_LOGS" value="$(arg SAVE_LOGS)" />
     </node>
     <node name="formation_control_node_2"  pkg="formation_control" type="formation_control_node">
         <remap from="/odom" to="/hummingbird2/ground_truth/odometry" />
@@ -39,8 +42,10 @@
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)" />
         <param name="OBSTACLES_NUM" value="$(arg OBSTACLES_NUM)" />
         <param name="CLUSTERS_NUM" value="$(arg CLUSTERS_NUM)" />
+        <param name="SAVE_LOGS" value="$(arg SAVE_LOGS)" />
     </node>
 
+    <!--
     <node name="formation_control_node_3"  pkg="formation_control" type="formation_control_node">
         <remap from="/odom" to="/hummingbird3/ground_truth/odometry" />
         <remap from="/cmd_vel_out" to="/hummingbird3/autopilot/velocity_command" />
@@ -141,6 +146,6 @@
         <param name="OBSTACLES_NUM" value="$(arg OBSTACLES_NUM)" />
         <param name="CLUSTERS_NUM" value="$(arg CLUSTERS_NUM)" />
     </node>
-
+    -->
 
 </launch>

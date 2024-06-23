@@ -8,15 +8,15 @@
     <arg name="use_robot_0" default="1"/>
     <arg name="use_robot_1" default="1"/>
     <arg name="use_robot_2" default="1"/>
-    <arg name="use_robot_3" default="1"/>
-    <arg name="use_robot_4" default="1"/>
-    <arg name="use_robot_5" default="1"/>
-    <arg name="use_robot_6" default="1"/>
-    <arg name="use_robot_7" default="1"/>
-    <arg name="use_robot_8" default="1"/>
-    <arg name="use_robot_9" default="1"/>
-    <arg name="use_robot_10" default="1"/>
-    <arg name="use_robot_11" default="1"/>
+    <arg name="use_robot_3" default="0"/>
+    <arg name="use_robot_4" default="0"/>
+    <arg name="use_robot_5" default="0"/>
+    <arg name="use_robot_6" default="0"/>
+    <arg name="use_robot_7" default="0"/>
+    <arg name="use_robot_8" default="0"/>
+    <arg name="use_robot_9" default="0"/>
+    <arg name="use_robot_10" default="0"/>
+    <arg name="use_robot_11" default="0"/>
     <arg name="use_robot_12" default="0"/>
     <arg name="use_robot_13" default="0"/>
     <arg name="use_robot_14" default="0"/>

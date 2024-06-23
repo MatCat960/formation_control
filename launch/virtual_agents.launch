@@ -2,7 +2,7 @@
 <launch>
     
     <arg name="ROBOTS_NUM" default="3" />
-    <arg name="CLUSTERS_NUM" default="4" />
+    <arg name="CLUSTERS_NUM" default="1" />
     <arg name="OBSTACLES_NUM" default="2" />
     <arg name="ROBOT_RANGE" default="100.0" />
     <arg name="ROBOT_FOV" default="360.0" />
@@ -16,6 +16,7 @@
         <remap from="/virtual_agent" to="/cluster0/virtual_agent" />
     </node>
 
+    <!--
     <node name="virtual_agent_1"  pkg="formation_control" type="virtual_agent">
         <param name="ROBOT_ID" value="3" />
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)" />
@@ -42,6 +43,6 @@
         <param name="OBSTACLES_NUM" value="$(arg OBSTACLES_NUM)" />
         <remap from="/virtual_agent" to="/cluster3/virtual_agent" />
     </node>
-
+    -->
 
 </launch>

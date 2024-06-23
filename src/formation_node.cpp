@@ -3,6 +3,9 @@
 #include <chrono>
 #include <random>
 #include <cmath>
+#include <fstream>
+#include <stdio.h>
+#include <sys/stat.h>
 
 
 #include <ros/ros.h>
@@ -15,6 +18,12 @@
 #include <tf2/utils.h>
 
 #define M_PI   3.14159265358979323846  /*pi*/
+
+bool IsPathExist(const std::string &s)
+{
+  struct stat buffer;
+  return (stat (s.c_str(), &buffer) == 0);
+}
 
 class FormationNode
 {
@@ -37,16 +46,18 @@ private:
     Eigen::MatrixXd obs, obs_i;                  // global, local
     Eigen::Vector3d p;
 
-    int CLUSTERS_NUM = 4;
+    int CLUSTERS_NUM = 1;
     int cluster_id = 0;
     int ROBOTS_NUM = 3;
-    int OBSTACLES_NUM = 1;
+    int OBSTACLES_NUM = 2;
     int ID = 0;
     double ROBOT_FOV = 120.0;
     double ROBOT_RANGE = 8.0;
     double SAFETY_DIST = 2.0;
+    bool SAVE_LOGS = false;
 
     bool got_target;
+    std::ofstream log_file;
 
 
     
@@ -54,13 +65,14 @@ private:
 public:
 
 
-    FormationNode(): nh_("~"), controller(2.09, 2.0, 8.0, 11, 2, 2)
+    FormationNode(): nh_("~"), controller(2.09, 2.0, 8.0, 2, 2, 2)
     {
         std::cout << "Constructor called" << std::endl;
         nh_.getParam("ID", ID);
         nh_.getParam("ROBOTS_NUM", ROBOTS_NUM);
         nh_.getParam("CLUSTERS_NUM", CLUSTERS_NUM);
         nh_.getParam("OBSTACLES_NUM", OBSTACLES_NUM);
+        nh_.getParam("SAVE_LOGS", SAVE_LOGS);
         sub = n.subscribe<geometry_msgs::Twist> ("/cmd_vel_in", 1, &FormationNode::vel_callback, this);
         neighbors_sub = n.subscribe<geometry_msgs::PoseArray>("/neighbors_topic", 1, &FormationNode::neigh_callback, this);
         pose_sub = n.subscribe<nav_msgs::Odometry>("odom", 1, &FormationNode::odom_callback, this);
@@ -98,6 +110,11 @@ public:
         controller.setGamma(1.0, 5.0, 0.1);
         controller.setVelBounds(-1.0, 1.0);
         controller.setVerbose(false);
+
+        if (SAVE_LOGS)
+        {
+            open_log_file();
+        }
 
         std::cout << "Constructor finished" << std::endl;
         std::cout << "Hi! I'm robot number " << ID << std::endl;
@@ -237,7 +254,8 @@ public:
 
         geometry_msgs::TwistStamped vel_msg;
         // std::cout << "obs-i : " << obs_i << std::endl;
-        if (!controller.applyCbf(uopt, u_star, p_js_i, p_t_i, obs_i, mates))
+        Eigen::VectorXd h_out;
+        if (!controller.applyCbf(uopt, u_star, p_js_i, p_t_i, obs_i, mates, h_out))
         {
             std::cout << "Local optimal vel: " << uopt.transpose() << std::endl;
             uopt_global.head(2) = R_w_i.transpose() * uopt.head(2);
@@ -253,6 +271,19 @@ public:
         {
             ROS_INFO("CBF FAILED");
             ROS_ERROR("CBF FAILED");
+        }
+
+        std::cout << "h_out: " << h_out.transpose() << std::endl;
+
+        if (SAVE_LOGS)
+        {
+            std::string txt;
+            for (int i = 0; i < h_out.size(); i++)
+            {
+                txt += std::to_string(h_out(i)) + " ";
+            }
+            txt += "\n";
+            write_log_file(txt);
         }
     }
 
@@ -274,6 +305,47 @@ public:
         // ustar(0) = msg->linear.x;
         // ustar(1) = msg->linear.y;
         // ustar(2) = msg->angular.z;
+    }
+
+    //open write and close LOG file
+    void open_log_file()
+    {
+        std::time_t t = time(0);
+        struct tm * now = localtime(&t);
+        char buffer [80];
+
+        char *dir = get_current_dir_name();
+        std::string dir_str(dir);
+
+        std::cout << "Directory: " << dir_str << std::endl;
+        std::string dir_path = dir_str + "/formation_logs" + std::to_string(ID); //+"-"+std::to_string(id);
+        if (IsPathExist(dir_path))     //check if the folder exists
+        {
+            strftime (buffer,80,"/%Y_%m_%d_%H-%M_logfile.txt", now);
+        } else {
+            system(("mkdir " + dir_path).c_str()); //+"-"+std::to_string(id)).c_str());
+            strftime (buffer,80,"/%Y_%m_%d_%H-%M_logfile.txt",now);
+        }
+
+        std::cout<<"file name :: "<<dir_path + buffer<<std::endl;
+        // this->log_file.open(dir_path + buffer,std::ofstream::app);
+        this->log_file.open(dir_path + buffer,std::ofstream::app);
+        // this->log_file << "Robot " << ROBOT_ID << " log file\n";
+    }
+
+    void write_log_file(std::string text)
+    {
+        if (this->log_file.is_open())
+        {
+            this->log_file << text;
+            this->log_file.flush();
+        }
+    }
+
+    void close_log_file()
+    {
+        std::cout<<"Log file is being closed"<<std::endl;
+        this->log_file.close();
     }
 
 };//End of class SubscribeAndPublish

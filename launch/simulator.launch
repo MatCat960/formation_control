@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="ROBOTS_NUM" default="12" />
+    <arg name="ROBOTS_NUM" default="3" />
     <arg name="ROBOT_RANGE" default="100.0" />
     <arg name="ROBOT_FOV" default="360.0" />
     <arg name="AREA_SIZE_x" default="60.0" />
     <arg name="AREA_SIZE_y" default="60.0" />
     <arg name="AREA_LEFT" default="-30.0" />
     <arg name="AREA_BOTTOM" default="-30.0" />
-    <arg name="SAVE_POS" default="false" />
+    <arg name="SAVE_POS" default="true" />
     <arg name="GUI" default="true"/>  
 
     <node name="supervisor"  pkg="formation_control" type="supervisor_iso" output="screen">
