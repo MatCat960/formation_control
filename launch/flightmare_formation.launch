@@ -132,7 +132,7 @@
 <!-- ======== OBSTACLES =========-->
 <!-- <include file="$(find formation_control)/launch/obstacles.launch" /> -->
 
-<!-- <include file="$(find formation_control)/launch/supervisor.launch" /> -->
+<include file="$(find formation_control)/launch/supervisor.launch" />
 
 <!-- ================================================  Spawn the quadrotor ================================================  -->
 <group if="$(arg use_quad1)" ns="$(arg mav_name)1">

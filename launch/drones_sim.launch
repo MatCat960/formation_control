@@ -4,6 +4,7 @@
     <arg name="NAME" default="hummingbird" />
     <arg name="posfile" default="$(find formation_control)/pos.txt"/>
     <arg name="GUI" default="true"/>
+    <arg name="AREA_W" default="20.0" />
 
     <arg name="use_robot_0" default="1"/>
     <arg name="use_robot_1" default="1"/>
@@ -28,6 +29,16 @@
 
 
     <node if="$(arg GUI)" pkg="rviz" type="rviz" name="rviz" args="-d $(find formation_control)/rviz/drones.rviz" output="screen" />
+    <node if="$(arg GUI)" pkg="formation_control" type="viz_node.py" name="viz_node" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+    </node>
+
+    <include file="$(find formation_control)/launch/supervisor.launch" />
+
+    <node pkg="formation_control" type="target_node.py" name="target_node" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+    </node>
+
 
     <node if="$(arg use_robot_0)" pkg="formation_control" type="drone_sim" name="drone_sim_0" output="screen" >
         <param name="ROBOT_ID" value="0" />
