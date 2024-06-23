@@ -4,7 +4,7 @@
 	<arg name="mav_name" default="$(arg quad_name)" />
 	<!-- <arg name="enemy_name" default="neo9" /> -->
 	<arg name="model" value="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" />
-	<arg name="world_name" default="$(find rotors_gazebo)/worlds/tower_obstacles.world" />
+	<arg name="world_name" default="$(find formation_control)/worlds/tower_obstacles.world" />
 	<arg name="use_unity_editor" default="false" />
 	<arg name="paused" value="true" />
 	<arg name="gui" default="true" />
@@ -124,15 +124,15 @@
 
 	<!-- ================================================  Spawn the target ================================================  -->
 <group ns="target">
-	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3cam_$(arg target_model).urdf.xacro" />
+	<param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg target_model).urdf.xacro" />
 
   <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-urdf -model turtlebot3_$(arg target_model) -x $(arg xt) -y $(arg yt) -Y $(arg yawt) -param robot_description"/>
 </group>
 
 <!-- ======== OBSTACLES =========-->
-<include file="$(find formation_control)/launch/obstacles.launch" />
+<!-- <include file="$(find formation_control)/launch/obstacles.launch" /> -->
 
-<include file="$(find formation_control)/launch/supervisor.launch" />
+<!-- <include file="$(find formation_control)/launch/supervisor.launch" /> -->
 
 <!-- ================================================  Spawn the quadrotor ================================================  -->
 <group if="$(arg use_quad1)" ns="$(arg mav_name)1">

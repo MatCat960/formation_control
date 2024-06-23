@@ -22,9 +22,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
-// My includes
-#include "FortuneAlgorithm.h"
-#include "Voronoi.h"
+
 // ROS includes
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
@@ -147,7 +145,6 @@ private:
     Eigen::VectorXd pose_x;
     Eigen::VectorXd pose_y;
     Eigen::VectorXd pose_theta;
-    std::vector<Vector2<double>> seeds_xy;
 
     
 
@@ -279,8 +276,6 @@ void Controller::poseCallback(int i, const nav_msgs::Odometry::ConstPtr &msg)
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Controller::Emulate_Vision(){
 
-    Box<double> AreaBox{AREA_LEFT, AREA_BOTTOM, AREA_SIZE_x + AREA_LEFT, AREA_SIZE_y + AREA_BOTTOM};
-    Box<double> RangeBox{-ROBOT_RANGE, -ROBOT_RANGE, ROBOT_RANGE, ROBOT_RANGE};
 
     // fake position for non detected robots
     geometry_msgs::Pose fake_pose;
