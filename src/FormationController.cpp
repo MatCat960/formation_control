@@ -23,6 +23,7 @@ namespace formation_control
         std::cout << "Hessian matrix filled" << std::endl;
 
         target_distance_ = max_distance_ * sin(M_PI/(mates_num_+1));           // corda di un cerchio = 2r*sin(th/2). r = R/2, th = 2*pi/(n+1)
+        th_des = 2 * M_PI / (mates_num_ + 1);                                   // desired angle between mates to be evenly distributed on a circumference
         // target_distance_ = max_distance_ * sin(M_PI/);
         // A << tan(fow_angle_ / 2), 1.0, tan(fow_angle_ / 2), -1.0, 1.0, 0.0, -1.0, 0.0;
 
@@ -42,7 +43,8 @@ namespace formation_control
         // - 1*N_obs for safety distance from obstacles
         // - 1*N_mates for CLF (desired formation) 
         // - 1*N_mates for max distance from mates (connectivity maintenance)
-        vars_num_ = 4 + max_robots_ + max_obstacles_ + 2*mates_num_;
+        vars_num_ = 4 + max_robots_ + max_obstacles_ + 2*mates_num_;             // DARS24
+        // vars_num = 4 + max_robots_ + max_obstacles_ + mates_num_ + 1;
         solver.data()->setNumberOfConstraints(vars_num_);   
         std::cout << "Set number of variables and constraints" << std::endl;
 
@@ -98,7 +100,7 @@ namespace formation_control
     }
 
 
-    int FormationController::applyCbf(Eigen::Vector3d &uopt, Eigen::Vector3d &ustar, Eigen::MatrixXd &p_js_i, Eigen::Vector2d &p_t_i, Eigen::MatrixXd &obs_i, std::vector<Eigen::Vector2d> &mates)
+    int FormationController::applyCbf(Eigen::Vector3d &uopt, Eigen::Vector3d &ustar, Eigen::MatrixXd &p_js_i, Eigen::Vector2d &p_t_i, Eigen::MatrixXd &obs_i, std::vector<Eigen::Vector2d> &mates, Eigen::VectorXd &h_out)
     {
         Eigen::SparseMatrix<double> A;
         A.resize(vars_num_, 4);
@@ -203,6 +205,7 @@ namespace formation_control
             V = pow(z - target_distance_, 2);
             upperbound(4 + max_robots_ + max_obstacles_ + mates_num_ + i) = -gamma_clf_ * V;
         }
+
         // std::cout << "Defined CLF constraints" << std::endl;
 
         // CLF on desired target position
@@ -257,6 +260,9 @@ namespace formation_control
         auto u_i = solver.getSolution();
         uopt = u_i.head(3);
         auto hdot = A * u_i;
+
+        h_out.resize(hdot.size());
+        h_out = upperbound + hdot;
 
         // std::cout << "hdot: " << hdot.transpose() << std::endl;
         // std::cout << "lowerbound: " << lowerbound.transpose() << std::endl;

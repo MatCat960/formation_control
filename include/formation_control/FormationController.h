@@ -16,6 +16,7 @@ namespace formation_control
         double min_distance_; // minimum distance at which the drones should be kept at
         double max_distance_; // maximum distance at which the drones should be kept at
         double target_distance_; // desired distance among drones
+        double th_des;
         Eigen::SparseMatrix<double> H; //hessian matrix of optimization problem
         Eigen::VectorXd f; // vector of optimization problem
         // Eigen::Matrix<double,4,2> A;
@@ -35,7 +36,7 @@ namespace formation_control
     public:
         FormationController(double fow_angle, double min_distance, double max_distance, int max_robots_, int max_obstacles_, int mates_num);
         ~FormationController();
-        int applyCbf(Eigen::Vector3d &uopt, Eigen::Vector3d &ustar, Eigen::MatrixXd &p_j_i, Eigen::Vector2d &p_t_i, Eigen::MatrixXd &obs_i, std::vector<Eigen::Vector2d> &mates);
+        int applyCbf(Eigen::Vector3d &uopt, Eigen::Vector3d &ustar, Eigen::MatrixXd &p_j_i, Eigen::Vector2d &p_t_i, Eigen::MatrixXd &obs_i, std::vector<Eigen::Vector2d> &mates, Eigen::VectorXd &h_out);
         // int applyCbfSingle(Eigen::Vector3d &uopt, Eigen::VectorXd &h_out, Eigen::Vector3d &ustar, Eigen::Vector3d &p_i, int n_robot, Eigen::MatrixXd &p_j, Eigen::MatrixXd slack);
         void setVerbose(bool verbose);
         void setVelBounds(double v_min, double v_max);
