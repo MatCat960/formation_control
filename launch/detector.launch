@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="ROBOTS_NUM" default="3" />
+    <arg name="AREA_W" default="20.0" />
+
+    <arg name="use_robot_0" default="1"/>
+    <arg name="use_robot_1" default="1"/>
+    <arg name="use_robot_2" default="1"/>
+    <arg name="use_robot_3" default="0"/>
+    <arg name="use_robot_4" default="0"/>
+    <arg name="use_robot_5" default="0"/>
+    <arg name="use_robot_6" default="0"/>
+    <arg name="use_robot_7" default="0"/>
+    <arg name="use_robot_8" default="0"/>
+    <arg name="use_robot_9" default="0"/>
+    <arg name="use_robot_10" default="0"/>
+    <arg name="use_robot_11" default="0"/>
+    <arg name="use_robot_12" default="0"/>
+    <arg name="use_robot_13" default="0"/>
+    <arg name="use_robot_14" default="0"/>
+    <arg name="use_robot_15" default="0"/>
+    <arg name="use_robot_16" default="0"/>
+    <arg name="use_robot_17" default="0"/>
+    <arg name="use_robot_18" default="0"/>
+    <arg name="use_robot_19" default="0"/>
+
+
+    <node if="$(arg use_robot_0)" pkg="formation_control" type="detector_node.py" name="detector_node_0" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <remap from="/robot_odom" to="/hummingbird0/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot0/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+    <node if="$(arg use_robot_1)" pkg="formation_control" type="detector_node.py" name="detector_node_1" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <remap from="/robot_odom" to="/hummingbird1/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot1/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+    <node if="$(arg use_robot_2)" pkg="formation_control" type="detector_node.py" name="detector_node_2" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <remap from="/robot_odom" to="/hummingbird2/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot2/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+
+    <node pkg="formation_control" type="stgp_node.py" name="gp_node" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)"/>
+        <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)"/>
+    </node>
+
+
+</launch>
