@@ -12,7 +12,7 @@ import rospy
 from geometry_msgs.msg import Point, Twist, Pose
 from nav_msgs.msg import Odometry, OccupancyGrid
 from tf.transformations import euler_from_quaternion
-
+import random
 
 
 
@@ -77,7 +77,8 @@ class Detector():
     self.robot_sub = rospy.Subscriber("/robot_odom", Odometry, self.robot_callback)
     self.target_sub = rospy.Subscriber("/target/odom", Odometry, self.target_callback)
     self.map_pub = rospy.Publisher("/detections_grid", OccupancyGrid, queue_size=1)
-    
+    self.det_pub = rospy.Publisher("/measurements", Pose, queue_size=1)
+
     self.map_msg = OccupancyGrid()
     self.map_msg.header.frame_id = "odom"
     self.map_msg.info.resolution = self.resolution
@@ -87,6 +88,8 @@ class Detector():
     self.map_msg.info.origin.position.x = -0.5*self.AREA_W
     self.map_msg.info.origin.position.y = -0.5*self.AREA_W
     self.map_msg.data = [-1 for _ in range(self.GRID_SIZE**2)]
+
+    self.measurement = Pose()
 
 
 
@@ -127,14 +130,25 @@ class Detector():
           self.map_msg.data[i+j*self.GRID_SIZE] = 0
     
     if insideFOV(self.robot, self.target, self.FOV_DEG, self.ROBOT_RANGE):
-      i_t = (self.target[0] + 0.5*self.AREA_W) // self.resolution
-      j_t = (self.target[1] + 0.5*self.AREA_W) // self.resolution
-      self.map_msg.data[int(i_t+j_t*self.GRID_SIZE)] = 100
+      # i_t = (self.target[0] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
+      # j_t = (self.target[1] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
+      # self.map_msg.data[int(i_t+j_t*self.GRID_SIZE)] = 100
+      # self.map_msg.data[int(i_t-1+j_t*self.GRID_SIZE)] = 100
+      # self.map_msg.data[int(i_t+1+j_t*self.GRID_SIZE)] = 100
+      # self.map_msg.data[int(i_t+(j_t-1)*self.GRID_SIZE)] = 100
+      # self.map_msg.data[int(i_t+(j_t+1)*self.GRID_SIZE)] = 100
+
+
+      self.measurement.position.x = self.target[0] + -0.5 + np.random.rand()
+      self.measurement.position.y = self.target[1] + -0.5 + np.random.rand()
+      self.det_pub.publish(self.measurement)
+
 
 
 
     self.map_msg.header.stamp = rospy.Time.now()
     self.map_pub.publish(self.map_msg)
+
 
 
 
