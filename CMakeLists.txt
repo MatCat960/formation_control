@@ -196,6 +196,14 @@ target_link_libraries(supervisor_iso
   ${PROJECT_NAME}
   OsqpEigen::OsqpEigen
   )
+
+add_executable(expl_centralized src/expl_centralized.cpp)
+add_dependencies(expl_centralized ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(expl_centralized
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+  OsqpEigen::OsqpEigen
+  )
   
 
 
