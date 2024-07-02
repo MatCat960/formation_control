@@ -107,8 +107,8 @@ public:
     
     }
 
-    /*
-    void publishVoro(const std::vector<Diagram<double>> diagrams)
+
+    void publishVoro(const std::vector<Diagram<double>> &diagrams)
     {
         visualization_msgs::MarkerArray voro_msg;
         for (int i = 0; i < diagrams.size(); i++)
@@ -118,12 +118,28 @@ public:
             diagram_msg.id = i;
             diagram_msg.type = 4;          // Linestrip
             diagram_msg.action = visualization_msgs::Marker::ADD;
-            diagram_msg.scale.x = 1.0;
+            diagram_msg.scale.x = 0.2;
             diagram_msg.color.a = 1.0;
             diagram_msg.color.r = 0.0;
             diagram_msg.color.g = 1.0;
             diagram_msg.color.b = 0.0;
 
+            auto halfEdge = diagrams[i].getFaces().at(0).outerComponent;
+            geometry_msgs::Point tmp_p;
+            // resizing every time because the library does not expose the number of vertices
+            do
+            {
+                tmp_p.x = halfEdge->origin->point.x;
+                tmp_p.y = halfEdge->origin->point.y;
+                // tmp_p.z = 0.0;
+                diagram_msg.points.push_back(tmp_p);
+                halfEdge = halfEdge->next; 
+                
+            } while (halfEdge != diagrams[i].getFaces().at(0).outerComponent);   
+
+            diagram_msg.points.push_back(diagram_msg.points[0]);                // close the polygon
+
+            /*
             for (const auto& site : diagrams[i].getSites())
             {
                 Vector2<double> center = site.point;
@@ -159,6 +175,7 @@ public:
                     break;
                 }
             }
+            */
 
             voro_msg.markers.push_back(diagram_msg);
 
@@ -166,7 +183,6 @@ public:
 
         voro_pub.publish(voro_msg);
     }
-    */
 
     void publishCentroid(const std::vector<Vector2<double>> centroids)
     {
@@ -358,6 +374,7 @@ public:
             
         }
         publishCentroid(centr);
+        publishVoro(diagrams);
 
 
 
