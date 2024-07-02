@@ -9,8 +9,9 @@ import math
 
 # ROS stuff
 import rospy
-from geometry_msgs.msg import Point, Twist, Pose
+from geometry_msgs.msg import Point, Twist, Pose, PoseStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
+from std_msgs.msg import Float32, Int32MultiArray
 from tf.transformations import euler_from_quaternion
 import random
 
@@ -71,13 +72,14 @@ class Detector():
     self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
     self.ROBOT_RANGE = rospy.get_param("ROBOT_RANGE", 3.0)
     self.dt = rospy.get_param("dt", 0.2)
-    self.GRID_SIZE = 100
+    self.GRID_SIZE = rospy.get_param("GRID_SIZE", 50)
     self.resolution = self.AREA_W / self.GRID_SIZE
 
     self.robot_sub = rospy.Subscriber("/robot_odom", Odometry, self.robot_callback)
     self.target_sub = rospy.Subscriber("/target/odom", Odometry, self.target_callback)
     self.map_pub = rospy.Publisher("/detections_grid", OccupancyGrid, queue_size=1)
-    self.det_pub = rospy.Publisher("/measurements", Pose, queue_size=1)
+    self.det_pub = rospy.Publisher("/measurements", PoseStamped, queue_size=1)
+    self.times_pub = rospy.Publisher("/times", Int32MultiArray, queue_size=1)
 
     self.map_msg = OccupancyGrid()
     self.map_msg.header.frame_id = "odom"
@@ -89,7 +91,11 @@ class Detector():
     self.map_msg.info.origin.position.y = -0.5*self.AREA_W
     self.map_msg.data = [-1 for _ in range(self.GRID_SIZE**2)]
 
-    self.measurement = Pose()
+    times_msg = Int32MultiArray()
+    times_msg.data = [-1 for _ in range(self.GRID_SIZE**2)]
+    
+    self.times_msg = times_msg
+    self.measurement = PoseStamped()
 
 
 
@@ -98,6 +104,7 @@ class Detector():
     # self.detections = []
 
     self.timer = rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
+    self.t_start = rospy.Time.now()
 
     self.robot = np.zeros(3)
     self.target = np.zeros(2)
@@ -128,19 +135,16 @@ class Detector():
         x_ij = np.array([i*self.resolution - 0.5*self.AREA_W, -0.5*self.AREA_W + j*self.resolution])
         if insideFOV(self.robot, x_ij, self.FOV_DEG, self.ROBOT_RANGE):
           self.map_msg.data[i+j*self.GRID_SIZE] = 0
-    
+          self.times_msg.data[i+j*self.GRID_SIZE] = rospy.Time.now().secs
+      
     if insideFOV(self.robot, self.target, self.FOV_DEG, self.ROBOT_RANGE):
-      # i_t = (self.target[0] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
-      # j_t = (self.target[1] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
-      # self.map_msg.data[int(i_t+j_t*self.GRID_SIZE)] = 100
-      # self.map_msg.data[int(i_t-1+j_t*self.GRID_SIZE)] = 100
-      # self.map_msg.data[int(i_t+1+j_t*self.GRID_SIZE)] = 100
-      # self.map_msg.data[int(i_t+(j_t-1)*self.GRID_SIZE)] = 100
-      # self.map_msg.data[int(i_t+(j_t+1)*self.GRID_SIZE)] = 100
+      i_t = (self.target[0] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
+      j_t = (self.target[1] + 0.5*self.AREA_W) // self.resolution # + random.randint(-1, 1)
+      self.map_msg.data[int(i_t+j_t*self.GRID_SIZE)] = 100
 
-
-      self.measurement.position.x = self.target[0] + -0.5 + np.random.rand()
-      self.measurement.position.y = self.target[1] + -0.5 + np.random.rand()
+      self.measurement.header.stamp = rospy.Time.now()
+      self.measurement.pose.position.x = self.target[0] + -1 + 2*np.random.rand()
+      self.measurement.pose.position.y = self.target[1] + -1 + 2*np.random.rand()
       self.det_pub.publish(self.measurement)
 
 
@@ -148,6 +152,7 @@ class Detector():
 
     self.map_msg.header.stamp = rospy.Time.now()
     self.map_pub.publish(self.map_msg)
+    self.times_pub.publish(self.times_msg)
 
 
 

@@ -38,6 +38,7 @@ private:
     ros::Subscriber gp_sub;
     ros::Publisher test_pub;
     ros::Publisher voro_pub;
+    ros::Publisher centr_pub;
 
     nav_msgs::OccupancyGrid test_map;
     
@@ -48,7 +49,7 @@ private:
     double ROBOT_RANGE = 5.0;
     double FOV_DEG = 120.0;
     double FOV_RAD;
-    int GRID_SIZE = 100;
+    int GRID_SIZE = 50;
     double RESOLUTION;
 
     Eigen::MatrixXd robots;
@@ -78,6 +79,7 @@ public:
         gp_sub = n.subscribe<nav_msgs::OccupancyGrid>("/posterior_map", 1, &ExplorationNode::gp_callback, this);
         test_pub = n.advertise<nav_msgs::OccupancyGrid>("/test_map", 1);
         voro_pub = n.advertise<visualization_msgs::MarkerArray>("/voronoi", 1);
+        centr_pub = n.advertise<visualization_msgs::MarkerArray>("/centroid", 1);
         timer = n.createTimer(ros::Duration(0.1), &ExplorationNode::timer_callback,this);
 
         // init robots
@@ -105,29 +107,90 @@ public:
     
     }
 
-    void publishVoro(const std::vector<Vector2<double>> vertices)
+    /*
+    void publishVoro(const std::vector<Diagram<double>> diagrams)
     {
-        visualization_msgs::MarkerArray msg;
-        for (int i = 0; i < vertices.size(); i++)
+        visualization_msgs::MarkerArray voro_msg;
+        for (int i = 0; i < diagrams.size(); i++)
         {
-            visualization_msgs::Marker voro_msg;
-            voro_msg.header.frame_id = "odom";
-            voro_msg.id = i+1;
-            voro_msg.type = 1;
-            voro_msg.action = visualization_msgs::Marker::ADD;
-            voro_msg.scale.x = 1.0;
-            voro_msg.scale.y = 1.0;
-            voro_msg.scale.z = 1.0;
-            voro_msg.color.a = 1.0;
-            voro_msg.color.r = 0.0;
-            voro_msg.color.g = 1.0;
-            voro_msg.color.b = 0.0;
-            voro_msg.pose.position.x = vertices[i].x;
-            voro_msg.pose.position.y = vertices[i].y;
-            msg.markers.push_back(voro_msg);
+            visualization_msgs::Marker diagram_msg;
+            diagram_msg.header.frame_id = "odom";
+            diagram_msg.id = i;
+            diagram_msg.type = 4;          // Linestrip
+            diagram_msg.action = visualization_msgs::Marker::ADD;
+            diagram_msg.scale.x = 1.0;
+            diagram_msg.color.a = 1.0;
+            diagram_msg.color.r = 0.0;
+            diagram_msg.color.g = 1.0;
+            diagram_msg.color.b = 0.0;
+
+            for (const auto& site : diagrams[i].getSites())
+            {
+                Vector2<double> center = site.point;
+                auto face = site.face;
+                auto halfEdge = face->outerComponent;
+                if (halfEdge == nullptr) {continue;}
+            }
+
+            while(halfEdge->prev != nullptr)
+            {
+                halfEdge = halfEdge->prev;
+                if (halfEdge == face->outerComponent) {break;}
+            }
+            auto start = halfEdge;
+            while (halfEdge != nullptr)
+            {
+                if (halfEdge->origin != nullptr && halfEdge->destination != nullptr)
+                {
+                    auto origin = halfEdge->origin->point;
+                    geometry_msgs::Point tmp_p;
+                    tmp_p.x = origin.x;
+                    tmp_p.y = origin.y;
+                    diagram_msg.points.push_back(tmp_p);
+                    
+                }
+                halfEdge = halfEdge->next;
+                if(halfEdge == start)
+                {
+                    geometry_msgs::Point tmp_p;
+                    tmp_p.x = origin.x;
+                    tmp_p.y = origin.y;
+                    diagram_msg.points.push_back(tmp_p);
+                    break;
+                }
+            }
+
+            voro_msg.markers.push_back(diagram_msg);
+
         }
 
-        voro_pub.publish(msg);
+        voro_pub.publish(voro_msg);
+    }
+    */
+
+    void publishCentroid(const std::vector<Vector2<double>> centroids)
+    {
+        visualization_msgs::MarkerArray msg;
+        for (int i = 0; i < centroids.size(); i++)
+        {
+            visualization_msgs::Marker tmp_msg;
+            tmp_msg.header.frame_id = "odom";
+            tmp_msg.id = i+2;
+            tmp_msg.type = 1;          // Cube
+            tmp_msg.action = visualization_msgs::Marker::ADD;
+            tmp_msg.scale.x = 0.2;
+            tmp_msg.scale.y = 0.2;
+            tmp_msg.scale.z = 0.2;
+            tmp_msg.color.a = 1.0;
+            tmp_msg.color.r = 0.0;
+            tmp_msg.color.g = 0.0;
+            tmp_msg.color.b = 1.0;
+            tmp_msg.pose.position.x = centroids[i].x;
+            tmp_msg.pose.position.y = centroids[i].y;
+            msg.markers.push_back(tmp_msg);
+        }
+
+        centr_pub.publish(msg);
 
     }
 
@@ -155,6 +218,7 @@ public:
             auto dv = std::div(i, GRID_SIZE);       // row = quotient, col = rem
             gp(dv.quot, dv.rem) = msg->data[i];
         }
+        std::cout << "Max prob: " << gp.maxCoeff() << std::endl;
     }
     
     void timer_callback(const ros::TimerEvent&)
@@ -293,7 +357,7 @@ public:
 
             
         }
-        publishVoro(centr);
+        publishCentroid(centr);
 
 
 
