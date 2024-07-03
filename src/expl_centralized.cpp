@@ -51,6 +51,7 @@ private:
     double FOV_RAD;
     int GRID_SIZE = 50;
     double RESOLUTION;
+    std::string FRAME_ID = "world";
 
     Eigen::MatrixXd robots;
     Eigen::MatrixXd gp;
@@ -65,6 +66,7 @@ public:
         nh_.getParam("ROBOT_FOV", FOV_DEG);
         nh_.getParam("ROBOT_RANGE", ROBOT_RANGE);
         nh_.getParam("GRID_SIZE", GRID_SIZE);
+        nh_.getParam("frame_id", FRAME_ID);
         FOV_RAD = FOV_DEG * M_PI / 180.0;
 
         for (int i = 0; i < ROBOTS_NUM; i++)

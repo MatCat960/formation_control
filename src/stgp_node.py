@@ -87,13 +87,14 @@ class GPClassifier():
   def __init__(self):
     rospy.init_node("gp_classifier_node")
 
-    self.AREA_W = rospy.get_param("AREA_W", 20.0)
-    self.ROBOTS_NUM = rospy.get_param("ROBOTS_NUM", 3)
-    self.FOV_DEG = rospy.get_param("ROBOT_FOV", 120.0)
+    self.AREA_W = rospy.get_param("~AREA_W", 20.0)
+    self.ROBOTS_NUM = rospy.get_param("~ROBOTS_NUM", 3)
+    self.FOV_DEG = rospy.get_param("~ROBOT_FOV", 120.0)
     self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
-    self.dt = rospy.get_param("dt", 1.0)
-    self.GRID_SIZE = rospy.get_param("GRID_SIZE", 50)
-    self.DETECTIONS_BUFFER = rospy.get_param("DETECTIONS_BUFFER", 200)
+    self.dt = rospy.get_param("~dt", 1.0)
+    self.GRID_SIZE = rospy.get_param("~GRID_SIZE", 50)
+    self.DETECTIONS_BUFFER = rospy.get_param("~DETECTIONS_BUFFER", 200)
+    self.frame_id = rospy.get_param("~frame_id", "world")
     self.resolution = self.AREA_W / self.GRID_SIZE
     print("Resolution: ", self.resolution)
     print("Grid size: ", self.GRID_SIZE)
@@ -107,7 +108,7 @@ class GPClassifier():
     self.times_sub = rospy.Subscriber("/times", Int32MultiArray, self.t_callback)
     
     self.prior_map = OccupancyGrid()
-    self.prior_map.header.frame_id = "odom"
+    self.prior_map.header.frame_id = self.frame_id
     self.prior_map.info.resolution = self.resolution
     self.prior_map.info.width = self.GRID_SIZE
     self.prior_map.info.height = self.GRID_SIZE
@@ -117,7 +118,7 @@ class GPClassifier():
     self.prior_map.data = [-1 for _ in range(self.GRID_SIZE**2)]
     
     self.post_map = OccupancyGrid()
-    self.post_map.header.frame_id = "odom"
+    self.post_map.header.frame_id = self.frame_id
     self.post_map.info.resolution = self.resolution
     self.post_map.info.width = self.GRID_SIZE
     self.post_map.info.height = self.GRID_SIZE

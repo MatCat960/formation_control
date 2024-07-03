@@ -16,6 +16,9 @@
 	<arg name="custom_models" default="" />
 	<arg name="enable_logging" default="false" />
 	<arg name="target_model" default="burger" />	
+	<arg name="rviz" default="true"/>
+	<arg name="AREA_W" default="20.0"/>
+	<arg name="frame_id" default="world"/>
 
 	<arg name="debug" default="false" />
 	<arg name="verbose" default="false" />
@@ -129,10 +132,24 @@
   <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-urdf -model turtlebot3_$(arg target_model) -x $(arg xt) -y $(arg yt) -Y $(arg yawt) -param robot_description"/>
 </group>
 
+<!-- ======== STATIC TF =========-->
+<node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 /odom /world 100"/>
+
 <!-- ======== OBSTACLES =========-->
 <!-- <include file="$(find formation_control)/launch/obstacles.launch" /> -->
 
-<include file="$(find formation_control)/launch/supervisor.launch" />
+
+<!-- ======== SUPERVISOR =========-->
+<!-- <include file="$(find formation_control)/launch/supervisor.launch" /> -->
+
+<!-- =========== RViz ========== -->
+<node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find formation_control)/rviz/drones.rviz" output="screen" />
+<node if="$(arg rviz)" pkg="formation_control" type="viz_node.py" name="viz_node" output="screen">
+	<param name="AREA_W" value="$(arg AREA_W)" />
+	<param name="frame_id" value="$(arg frame_id)" />
+</node>
+
+
 
 <!-- ================================================  Spawn the quadrotor ================================================  -->
 <group if="$(arg use_quad1)" ns="$(arg mav_name)1">

@@ -698,7 +698,7 @@ Visualization Manager:
       Marker Topic: /centroid
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -706,14 +706,14 @@ Visualization Manager:
       Marker Topic: /voronoi
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
@@ -753,9 +753,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2897969484329224
+      Pitch: 1.3247969150543213
       Target Frame: <Fixed Frame>
-      Yaw: 4.705420970916748
+      Yaw: 4.710421085357666
     Saved: ~
 Window Geometry:
   Displays:

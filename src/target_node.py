@@ -14,20 +14,22 @@ class Target():
     def __init__(self):
         rospy.init_node("target_node")
 
-        self.width = rospy.get_param("AREA_W", 20.0)
-        self.id = rospy.get_param("TARGET_ID", 0)
-        self.dt = rospy.get_param("dt", 0.2)
+        self.width = rospy.get_param("~AREA_W", 20.0)
+        self.id = rospy.get_param("~TARGET_ID", 0)
+        self.dt = rospy.get_param("~dt", 0.2)
+        self.frame_id = rospy.get_param("~frame_id", "world")
 
         self.timer = rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
         self.odomPub = rospy.Publisher("odom", Odometry, queue_size=1)
         
         self.odom_msg = Odometry()
-        self.odom_msg.header.frame_id = "odom"
+        self.odom_msg.header.frame_id = self.frame_id
         self.odom_msg.child_frame_id = f"target_{self.id}"
 
         # start in origin with random theta
-        self.target = np.zeros(3,)
-        self.target[2] = 2*math.pi*np.random.rand()
+        # self.target = np.zeros(3,)
+        # self.target[2] = 2*math.pi*np.random.rand()
+        self.target = np.ones(3,)
 
     def timer_callback(self, e):
         th = self.target[2]
@@ -52,7 +54,7 @@ class Target():
 
         # update target
         self.target = np.array([new_x, new_y, th])
-
+        
         # publish ros msg
         quaternion = tf.transformations.quaternion_from_euler(0.0, 0.0, th)
         self.odom_msg.pose.pose.position.x = self.target[0]

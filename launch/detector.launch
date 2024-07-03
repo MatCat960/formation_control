@@ -3,6 +3,7 @@
     <arg name="ROBOTS_NUM" default="3" />
     <arg name="AREA_W" default="20.0" />
     <arg name="GRID_SIZE" default="50" />
+    <arg name="frame_id" default="world" />
 
     <arg name="use_robot_0" default="1"/>
     <arg name="use_robot_1" default="1"/>
@@ -29,6 +30,7 @@
     <node if="$(arg use_robot_0)" pkg="formation_control" type="detector_node.py" name="detector_node_0" output="screen" >
         <param name="AREA_W" value="$(arg AREA_W)" />
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
+        <param name="frame_id" value="$(arg frame_id)" />
         <remap from="/robot_odom" to="/hummingbird0/ground_truth/odometry"/>
         <remap from="/detections_grid" to="/robot0/detections_grid"/>
         <!-- <remap from="/target/odom" to="/target/odom"/> -->
@@ -36,6 +38,7 @@
 
     <node if="$(arg use_robot_1)" pkg="formation_control" type="detector_node.py" name="detector_node_1" output="screen" >
         <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
         <remap from="/robot_odom" to="/hummingbird1/ground_truth/odometry"/>
         <remap from="/detections_grid" to="/robot1/detections_grid"/>
@@ -44,6 +47,7 @@
 
     <node if="$(arg use_robot_2)" pkg="formation_control" type="detector_node.py" name="detector_node_2" output="screen" >
         <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
         <remap from="/robot_odom" to="/hummingbird2/ground_truth/odometry"/>
         <remap from="/detections_grid" to="/robot2/detections_grid"/>
@@ -53,6 +57,7 @@
 
     <node pkg="formation_control" type="stgp_node.py" name="gp_node" output="screen" >
         <param name="AREA_W" value="$(arg AREA_W)"/>
+        <param name="frame_id" value="$(arg frame_id)" />
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)"/>
     </node>

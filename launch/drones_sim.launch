@@ -5,6 +5,7 @@
     <arg name="posfile" default="$(find formation_control)/pos.txt"/>
     <arg name="GUI" default="true"/>
     <arg name="AREA_W" default="20.0" />
+    <arg name="frame_id" default="world" />
 
     <arg name="use_robot_0" default="1"/>
     <arg name="use_robot_1" default="1"/>
@@ -31,9 +32,14 @@
     <node if="$(arg GUI)" pkg="rviz" type="rviz" name="rviz" args="-d $(find formation_control)/rviz/drones.rviz" output="screen" />
     <node if="$(arg GUI)" pkg="formation_control" type="viz_node.py" name="viz_node" >
         <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
     </node>
 
-    <include file="$(find formation_control)/launch/supervisor.launch" />
+    <!-- ======== STATIC TF =========-->
+    <node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 /odom /world 100"/>
+
+
+    <!-- <include file="$(find formation_control)/launch/supervisor.launch" /> -->
 
     <node pkg="formation_control" type="target_node.py" name="target_node" >
         <param name="AREA_W" value="$(arg AREA_W)" />

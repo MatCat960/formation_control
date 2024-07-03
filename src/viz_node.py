@@ -9,13 +9,15 @@ from geometry_msgs.msg import Point
 
 rospy.init_node("viz_node")
 
-width = rospy.get_param("AREA_W", 20.0)
+width = rospy.get_param("~AREA_W", 20.0)
+frame_id = rospy.get_param("~frame_id", "odom")
+print("Frame id: ", frame_id)
 
 # timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 bound_pub = rospy.Publisher("boundaries", Marker, queue_size=1)
 
 bound_msg = Marker()
-bound_msg.header.frame_id = "odom"
+bound_msg.header.frame_id = frame_id
 bound_msg.id = 0
 bound_msg.type = 4     # LineStrip
 bound_msg.action = Marker.ADD

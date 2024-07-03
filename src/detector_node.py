@@ -67,12 +67,13 @@ class Detector():
   def __init__(self):
     rospy.init_node("detector_node")
 
-    self.AREA_W = rospy.get_param("AREA_W", 20.0)
-    self.FOV_DEG = rospy.get_param("ROBOT_FOV", 120.0)
+    self.AREA_W = rospy.get_param("~AREA_W", 20.0)
+    self.frame_id = rospy.get_param("~frame_id", "world")
+    self.FOV_DEG = rospy.get_param("~ROBOT_FOV", 120.0)
     self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
-    self.ROBOT_RANGE = rospy.get_param("ROBOT_RANGE", 3.0)
-    self.dt = rospy.get_param("dt", 0.2)
-    self.GRID_SIZE = rospy.get_param("GRID_SIZE", 50)
+    self.ROBOT_RANGE = rospy.get_param("~ROBOT_RANGE", 3.0)
+    self.dt = rospy.get_param("~dt", 0.2)
+    self.GRID_SIZE = rospy.get_param("~GRID_SIZE", 50)
     self.resolution = self.AREA_W / self.GRID_SIZE
 
     self.robot_sub = rospy.Subscriber("/robot_odom", Odometry, self.robot_callback)
@@ -82,7 +83,7 @@ class Detector():
     self.times_pub = rospy.Publisher("/times", Int32MultiArray, queue_size=1)
 
     self.map_msg = OccupancyGrid()
-    self.map_msg.header.frame_id = "odom"
+    self.map_msg.header.frame_id = self.frame_id
     self.map_msg.info.resolution = self.resolution
     self.map_msg.info.width = self.GRID_SIZE
     self.map_msg.info.height = self.GRID_SIZE
