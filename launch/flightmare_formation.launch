@@ -7,7 +7,7 @@
 	<arg name="world_name" default="$(find formation_control)/worlds/tower_obstacles.world" />
 	<arg name="use_unity_editor" default="false" />
 	<arg name="paused" value="true" />
-	<arg name="gui" default="true" />
+	<arg name="gui" default="false" />
 	<arg name="headless" value="true" />
 	<arg name="use_mpc" default="false" />
 	<arg name="use_ground_truth" default="true" />
@@ -26,9 +26,9 @@
 
 	<arg name="use_quad1" default="1" />
 	<arg name="use_quad2" default="1" />
-	<arg name="use_quad3" default="0" />
-	<arg name="use_quad4" default="0" />
-	<arg name="use_quad5" default="0" />
+	<arg name="use_quad3" default="1" />
+	<arg name="use_quad4" default="1" />
+	<arg name="use_quad5" default="1" />
 	<arg name="use_quad6" default="0" />
 	<arg name="use_quad7" default="0" />
 	<arg name="use_quad8" default="0" />
@@ -149,6 +149,14 @@
 	<param name="frame_id" value="$(arg frame_id)" />
 </node>
 
+<!-- =========== Move Target ========== -->
+<node pkg="formation_control" type="moving_target.py" name="target_node">
+	<param name="AREA_W" value="$(arg AREA_W)" />
+	<param name="frame_id" value="$(arg frame_id)" />
+	<remap from="/odom" to="/target/odom" />
+	<remap from="/cmd_vel" to="/target/cmd_vel"/>
+</node>
+
 
 
 <!-- ================================================  Spawn the quadrotor ================================================  -->
@@ -178,10 +186,10 @@
 		<arg name="yaw" value="$(arg th2)" />
 	</include>
 </group>
-<group if="$(arg use_quad3)" ns="$(arg mav_name)">
+<group if="$(arg use_quad3)" ns="$(arg mav_name)3">
 	<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
 		<arg name="mav_name" value="$(arg mav_name)" />
-		<arg name="namespace" value="$(arg mav_name)" />
+		<arg name="namespace" value="$(arg mav_name)3" />
 		<arg name="model" value="$(arg model)" />
 		<arg name="enable_logging" value="$(arg enable_logging)" />
 		<arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
@@ -472,7 +480,7 @@
 </group>
   <!-- ================================================  RPG stuff 3 ================================================  -->
 
-<group if="$(arg use_quad3)" ns="$(arg mav_name)">
+<group if="$(arg use_quad3)" ns="$(arg mav_name)3">
 	<!-- RPG RotorS interface. -->
 	<node pkg="rpg_rotors_interface" type="rpg_rotors_interface" name="rpg_rotors_interface" output="screen">
 		<rosparam file="$(find rpg_rotors_interface)/parameters/rpg_rotors_interface.yaml" />
@@ -1019,10 +1027,10 @@
 </group>
 
   <!-- ================================================  ARMING + HOVERING mav 3 ================================================  -->
-<group if="$(arg use_quad3)" ns="$(arg mav_name)">
+<group if="$(arg use_quad3)" ns="$(arg mav_name)3">
 	<node pkg="fow_control" type="fow_control_hover" name="hover_node" output="screen">
-		<remap from="/bridge/arm" to="/$(arg mav_name)/bridge/arm" />
-		<remap from="/autopilot/start" to="/$(arg mav_name)/autopilot/start" />
+		<remap from="/bridge/arm" to="/$(arg mav_name)3/bridge/arm" />
+		<remap from="/autopilot/start" to="/$(arg mav_name)3/autopilot/start" />
 	</node>
 </group>
 
