@@ -164,9 +164,9 @@ class ExplorationNodepy():
             vel_xy = np.array([Cx, Cy]) - self.robots[idx, :2]
 
             # SFL
-            b = 0.5 * self.ROBOTS_NUM
+            b = 0.5 * self.ROBOT_RANGE
             Kp = 0.8
-            T = np.array([[math.cos(self.robots[idx, 2]), math.cos(self.robots[idx, 2])],
+            T = np.array([[math.cos(self.robots[idx, 2]), math.sin(self.robots[idx, 2])],
                             [-1/b * math.sin(self.robots[idx, 2]), 1*b * math.cos(self.robots[idx, 2])]])
             vel = np.matmul(T, vel_xy)
             v = max(-VMAX, min(VMAX, Kp*vel[0]))

@@ -135,7 +135,8 @@ class GPClassifier():
     self.Y = np.zeros(self.GRID_SIZE**2)
     self.t_start = rospy.Time.now()
     self.t_now = (rospy.Time.now() - self.t_start).secs
-    self.times = -np.inf * np.ones(self.GRID_SIZE**2)
+    # self.times = -np.inf * np.ones(self.GRID_SIZE**2)
+    self.times = np.zeros(self.GRID_SIZE**2)
 
     for i in range(0, self.GRID_SIZE**2, self.GRID_SIZE):
       X[i:i+self.GRID_SIZE, 0] = self.AREA_W*i/(self.GRID_SIZE**2)
@@ -220,6 +221,8 @@ class GPClassifier():
     print("times max: ", np.max(t_train))
     # print("t_train: ", t_train)
     Xst_train = np.concatenate((X_train, np.expand_dims(t_train, 1)), 1)
+    print("Max Xst: ", Xst_train.max())
+    print("Min Xst: ", Xst_train.min())
 
     if 1 not in y_train:
       y_train[np.random.randint(len(y_train))] = 1
