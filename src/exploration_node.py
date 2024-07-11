@@ -32,7 +32,7 @@ class ExplorationNodepy():
         self.AREA_W = rospy.get_param("~AREA_W", 20.0)
         self.frame_id = rospy.get_param("~frame_id", "world")
         self.FOV_DEG = rospy.get_param("~ROBOT_FOV", 120.0)
-        self.ROBOTS_NUM = rospy.get_param('~ROBOTS_NUM', 3)
+        self.ROBOTS_NUM = rospy.get_param('~ROBOTS_NUM', 6)
         self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
         self.ROBOT_RANGE = rospy.get_param("~ROBOT_RANGE", 3.0)
         self.dt = rospy.get_param("~dt", 0.5)
@@ -140,18 +140,16 @@ class ExplorationNodepy():
 
             
 
-            dA = dx*dy
+            dA = self.RESOLUTION**2
             A = 0.0
             Cx = 0.0; Cy = 0.0
 
-            pts_count = 0
             for i in np.arange(i_min, i_max):
                 for j in np.arange(j_min, j_max):
-                    pts_count += 1
                     x_i = i*self.RESOLUTION - 0.5*self.AREA_W # - self.robots[idx, 0]
                     y_i = j*self.RESOLUTION - 0.5*self.AREA_W # - self.robots[idx, 1]
                     if polygon.contains(Pt(x_i, y_i)):
-                        dA_pdf = self.gp[i,j]
+                        dA_pdf = dA*self.gp[i,j]
                         A = A + dA_pdf
                         Cx = Cx + x_i * dA_pdf
                         Cy = Cy + y_i * dA_pdf

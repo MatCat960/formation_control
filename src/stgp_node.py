@@ -93,7 +93,7 @@ class GPClassifier():
     self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
     self.dt = rospy.get_param("~dt", 1.0)
     self.GRID_SIZE = rospy.get_param("~GRID_SIZE", 50)
-    self.DETECTIONS_BUFFER = rospy.get_param("~DETECTIONS_BUFFER", 200)
+    self.DETECTIONS_BUFFER = rospy.get_param("~DETECTIONS_BUFFER", 50)
     self.frame_id = rospy.get_param("~frame_id", "world")
     self.resolution = self.AREA_W / self.GRID_SIZE
     print("Resolution: ", self.resolution)
@@ -129,7 +129,7 @@ class GPClassifier():
 
 
     self.timer = rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
-    self.T_factor = 0.1
+    self.T_factor = 0.01
 
     X = np.zeros((self.GRID_SIZE**2, 2))
     self.Y = np.zeros(self.GRID_SIZE**2)

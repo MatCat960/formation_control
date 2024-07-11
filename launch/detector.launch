@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="ROBOTS_NUM" default="3" />
+    <arg name="ROBOTS_NUM" default="6" />
     <arg name="AREA_W" default="20.0" />
     <arg name="GRID_SIZE" default="50" />
     <arg name="frame_id" default="world" />
@@ -8,9 +8,9 @@
     <arg name="use_robot_0" default="1"/>
     <arg name="use_robot_1" default="1"/>
     <arg name="use_robot_2" default="1"/>
-    <arg name="use_robot_3" default="0"/>
-    <arg name="use_robot_4" default="0"/>
-    <arg name="use_robot_5" default="0"/>
+    <arg name="use_robot_3" default="1"/>
+    <arg name="use_robot_4" default="1"/>
+    <arg name="use_robot_5" default="1"/>
     <arg name="use_robot_6" default="0"/>
     <arg name="use_robot_7" default="0"/>
     <arg name="use_robot_8" default="0"/>
@@ -51,6 +51,33 @@
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
         <remap from="/robot_odom" to="/hummingbird2/ground_truth/odometry"/>
         <remap from="/detections_grid" to="/robot2/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+    <node if="$(arg use_robot_3)" pkg="formation_control" type="detector_node.py" name="detector_node_3" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
+        <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
+        <remap from="/robot_odom" to="/hummingbird3/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot3/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+    <node if="$(arg use_robot_4)" pkg="formation_control" type="detector_node.py" name="detector_node_4" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
+        <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
+        <remap from="/robot_odom" to="/hummingbird4/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot4/detections_grid"/>
+        <!-- <remap from="/target/odom" to="/target/odom"/> -->
+    </node>
+
+    <node if="$(arg use_robot_5)" pkg="formation_control" type="detector_node.py" name="detector_node_5" output="screen" >
+        <param name="AREA_W" value="$(arg AREA_W)" />
+        <param name="frame_id" value="$(arg frame_id)" />
+        <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
+        <remap from="/robot_odom" to="/hummingbird5/ground_truth/odometry"/>
+        <remap from="/detections_grid" to="/robot5/detections_grid"/>
         <!-- <remap from="/target/odom" to="/target/odom"/> -->
     </node>
 
