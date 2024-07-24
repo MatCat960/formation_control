@@ -45,8 +45,8 @@
 	<arg name="use_quad19" default="0" />
 	<arg name="use_quad20" default="1" />
 
-	<arg name="xt" default="0.0"/>
-	<arg name="yt" default="0.0"/>
+	<arg name="xt" default="2.0"/>
+	<arg name="yt" default="2.0"/>
 	<arg name="yawt" default="0.785"/>
 	<arg name="x0" default="4.0"/>
 	<arg name="y0" default="4.0"/>

@@ -130,6 +130,7 @@ class GPClassifier():
 
     self.timer = rospy.Timer(rospy.Duration(self.dt), self.timer_callback)
     self.T_factor = 0.01
+    self.FORGET_TIME = 10.0
 
     X = np.zeros((self.GRID_SIZE**2, 2))
     self.Y = np.zeros(self.GRID_SIZE**2)
@@ -195,6 +196,9 @@ class GPClassifier():
     for i in self.det_ids:
       self.Y[i] = 0
 
+    # Remove old detections
+    self.measurements = [m for m in self.measurements if self.t_now - m[2].secs < self.FORGET_TIME]
+
     print("Number of measurements: ", len(self.measurements))
     
     
@@ -219,6 +223,7 @@ class GPClassifier():
     y_train = self.Y[self.det_ids]
     t_train = self.T_factor*(self.times[self.det_ids] - self.t_start.secs)
     print("times max: ", np.max(t_train))
+    print("times min: ", np.min(t_train))
     # print("t_train: ", t_train)
     Xst_train = np.concatenate((X_train, np.expand_dims(t_train, 1)), 1)
     print("Max Xst: ", Xst_train.max())

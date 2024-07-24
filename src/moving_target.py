@@ -9,7 +9,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 
-VMAX = 0.25
+VMAX = 0.5
 
 class Target():
     def __init__(self):
