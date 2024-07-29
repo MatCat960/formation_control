@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="ROBOTS_NUM" default="6" />
+    <arg name="ROBOTS_NUM" default="4" />
     <arg name="AREA_W" default="20.0" />
     <arg name="GRID_SIZE" default="50" />
     <arg name="frame_id" default="world" />
@@ -9,8 +9,8 @@
     <arg name="use_robot_1" default="1"/>
     <arg name="use_robot_2" default="1"/>
     <arg name="use_robot_3" default="1"/>
-    <arg name="use_robot_4" default="1"/>
-    <arg name="use_robot_5" default="1"/>
+    <arg name="use_robot_4" default="0"/>
+    <arg name="use_robot_5" default="0"/>
     <arg name="use_robot_6" default="0"/>
     <arg name="use_robot_7" default="0"/>
     <arg name="use_robot_8" default="0"/>
@@ -82,12 +82,14 @@
     </node>
 
 
-    <node pkg="formation_control" type="stgp_node.py" name="gp_node" output="screen" >
+    <!--
+    <node pkg="formation_control" type="gpu_stgp_node.py" name="gp_node" output="screen" >
         <param name="AREA_W" value="$(arg AREA_W)"/>
         <param name="frame_id" value="$(arg frame_id)" />
         <param name="GRID_SIZE" value="$(arg GRID_SIZE)" />
         <param name="ROBOTS_NUM" value="$(arg ROBOTS_NUM)"/>
     </node>
+    -->
 
 
 </launch>

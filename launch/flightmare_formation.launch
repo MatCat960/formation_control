@@ -27,8 +27,8 @@
 	<arg name="use_quad1" default="1" />
 	<arg name="use_quad2" default="1" />
 	<arg name="use_quad3" default="1" />
-	<arg name="use_quad4" default="1" />
-	<arg name="use_quad5" default="1" />
+	<arg name="use_quad4" default="0" />
+	<arg name="use_quad5" default="0" />
 	<arg name="use_quad6" default="0" />
 	<arg name="use_quad7" default="0" />
 	<arg name="use_quad8" default="0" />
@@ -50,12 +50,12 @@
 	<arg name="yawt" default="0.785"/>
 	<arg name="x0" default="4.0"/>
 	<arg name="y0" default="4.0"/>
-	<arg name="x1" default="4.0"/>
-	<arg name="y1" default="-4.0"/>
-	<arg name="x2" default="-4.0"/>
-	<arg name="y2" default="-4.0"/>
-	<arg name="x3" default="-4.0"/>
-	<arg name="y3" default="4.0"/>
+	<arg name="x1" default="-4.0"/>
+	<arg name="y1" default="4.0"/>
+	<arg name="x2" default="0.0"/>
+	<arg name="y2" default="5.0"/>
+	<arg name="x3" default="-2.0"/>
+	<arg name="y3" default="2.0"/>
 	<arg name="x4" default="-6.0"/>
 	<arg name="y4" default="0.0"/>
 	<arg name="x5" default="6.0"/>
