@@ -45,6 +45,10 @@ def objective_function(u):
 def safety_constraint(u, A, b):
     return -np.dot(A,u) + b
 
+def softmax(x):
+    return np.exp(x) / np.sum(np.exp(x))
+
+
 
 class ExplorationNodepy():
     def __init__(self):
@@ -54,7 +58,7 @@ class ExplorationNodepy():
         self.AREA_W = rospy.get_param("~AREA_W", 20.0)
         self.frame_id = rospy.get_param("~frame_id", "world")
         self.FOV_DEG = rospy.get_param("~ROBOT_FOV", 120.0)
-        self.ROBOTS_NUM = rospy.get_param('~ROBOTS_NUM', 6)
+        self.ROBOTS_NUM = rospy.get_param('~ROBOTS_NUM', 4)
         self.FOV_RAD = self.FOV_DEG * math.pi / 180.0
         self.ROBOT_RANGE = rospy.get_param("~ROBOT_RANGE", 3.0)
         self.dt = rospy.get_param("~dt", 0.1)
@@ -110,10 +114,11 @@ class ExplorationNodepy():
         self.gp = np.array(msg.data)
         print(f"Min/max GP values before sigmoid: {self.gp.min()}, {self.gp.max()}")
 
-        # self.gp = 100*modified_sigmoid(self.gp, k=0.1)
+        # self.gp = 100*modified_sigmoid(self.gp, k=1.0)
+        self.gp = 100*softmax(self.gp)
         # self.gp = self.gp**3
         # self.gp = np.exp(self.gp) - 1
-        self.gp[self.gp > 55] *= 20
+        # self.gp[self.gp > 55] *= 20
         print(f"Min/max GP values after sigmoid: {self.gp.min()}, {self.gp.max()}")
 
         # self.gp_map.data = np.ravel(self.gp*100/np.max(self.gp)).astype(int).tolist()
