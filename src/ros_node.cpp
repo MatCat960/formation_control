@@ -103,11 +103,11 @@ void FormationNode::declareAndInitParams()
   declare_parameter("max_velocity", 3.0);
   declare_parameter("neighbor_validity_ms", 100);
   declare_parameter("max_obstacles", 10);
-  declare_parameter("robot_safe_distance", 0.5);
-  declare_parameter("robot_avoidance_gain", 1.0);
-  declare_parameter("obstacle_safe_distance", 1.0);
+  declare_parameter("robot_safe_distance", 5.0);
+  declare_parameter("robot_avoidance_gain", 5.0);
+  declare_parameter("obstacle_safe_distance", 5.0);
   declare_parameter("obstacle_avoidance_gain", 1.0);
-  declare_parameter("formation_clf_gain", 1.0);
+  declare_parameter("formation_clf_gain", 0.1);
   declare_parameter("formation_radius", 1.0);
   declare_parameter("target_p_gain", 1.0);
   declare_parameter("target_d_gain", 0.1);
