@@ -4,15 +4,26 @@ project(formation_control)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+if(NOT CMAKE_BUILD_TYPE)
+    message(WARNING "CMAKE_BUILD_TYPE not set")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Default build type: RelWithDebInfo" FORCE)
+endif()
+
+message("Build type: ${CMAKE_BUILD_TYPE}")
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+
+# general dependencies
+find_package(Eigen3 3.4 REQUIRED)
+
+# ROS dependencies
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(arrc_interfaces REQUIRED)
-find_package(OsqpEigen REQUIRED)
+find_package(qpOASES_e REQUIRED)
 
 set(dependencies
   "rclcpp"
@@ -20,9 +31,53 @@ set(dependencies
   "tf2"
   "tf2_ros"
   "arrc_interfaces"
-  "OsqpEigen"
 )
 
+
+# let the compiler search for headers in include folder
+include_directories(include)
+
+# define a library target
+add_library(${PROJECT_NAME}
+    src/formation_controller.cpp
+)
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(${PROJECT_NAME} ${dependencies})
+target_link_libraries(${PROJECT_NAME} qpOASES_e fmt::fmt)
+
+
+add_executable(${PROJECT_NAME}_node src/ros_node.cpp)
+ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME} fmt::fmt)
+
+
+ament_export_targets(${PROJECT_NAME}_TARGETS HAS_LIBRARY_TARGET)
+
+install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
+
+install(
+    TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}_TARGETS
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+# the above command does NOT install includes
+install(DIRECTORY include/${PROJECT_NAME}
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.hpp"
+)
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+install(PROGRAMS
+    scripts/sim_neighbors_sensing_node.py
+    DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -35,51 +90,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-# let the compiler search for headers in include folder
-include_directories(include)
-
-# define a library target
-add_library(formation_control
-  SHARED src/FormationController.cpp
-)
-
-ament_target_dependencies(formation_control ${dependencies})
-target_link_libraries(formation_control OsqpEigen::OsqpEigen)
-
-
-# export library
-ament_export_targets(formation_control HAS_LIBRARY_TARGET)
-ament_export_dependencies(${dependencies})
-
-
-
-# install
-install(
-  DIRECTORY include/formation_control
-  DESTINATION include
-)
-
-install(
-  TARGETS formation_control
-  EXPORT formation_control
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
-
-add_executable(formation_node src/formation_node.cpp)
-target_include_directories(formation_node PUBLIC formation_control)
-# target_compile_features(formation_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(formation_node ${dependencies})
-target_link_libraries(formation_node formation_control)
-install(TARGETS formation_node DESTINATION lib/${PROJECT_NAME})
-
-ament_export_dependencies(rclcpp)
-ament_export_dependencies(nav_msgs)
-ament_export_dependencies(arrc_interfaces)
-
-
+#ament_export_dependencies(${dependencies})
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
 ament_package()
