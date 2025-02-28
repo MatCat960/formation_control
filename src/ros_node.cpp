@@ -86,12 +86,12 @@ FormationNode::FormationNode() : Node("formation_controller")
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "odometry", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->odomCallback(msg); });
   neighbors_sub_ = this->create_subscription<arrc_interfaces::msg::Neighbors>(
-      "neighbors", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
+      "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
   vel_pub_ = this->create_publisher<arrc_interfaces::msg::UavVelAcc>("command/setVelocityAcceleration", 1);
   target_pub_ = this->create_publisher<geometry_msgs::msg::Point>("target", 1);
   // ---------- timers ----------
-  main_timer_ = this->create_wall_timer(20ms, [this]() { loop(); });
+  main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
 }
 
 void FormationNode::declareAndInitParams()
@@ -101,14 +101,17 @@ void FormationNode::declareAndInitParams()
   gps_origin_frame_ = uav_name_ + "/gps_origin";
   declare_parameter("max_agents", 10);
   declare_parameter("max_velocity", 3.0);
-  declare_parameter("neighbor_validity_ms", 100);
+  declare_parameter("neighbor_validity_ms", 2000);
   declare_parameter("max_obstacles", 10);
-  declare_parameter("robot_safe_distance", 5.0);
+  declare_parameter("robot_safe_distance", 2.0);
   declare_parameter("robot_avoidance_gain", 5.0);
   declare_parameter("obstacle_safe_distance", 5.0);
   declare_parameter("obstacle_avoidance_gain", 1.0);
+  declare_parameter("clf_enabled", true);
   declare_parameter("formation_clf_gain", 0.1);
-  declare_parameter("formation_radius", 1.0);
+  declare_parameter("formation_radius", 3.0);
+  declare_parameter("target_radius", 5.0);
+  declare_parameter("target_period", 60.0);
   declare_parameter("target_p_gain", 1.0);
   declare_parameter("target_d_gain", 0.1);
   declare_parameter("verbose", true);
@@ -122,6 +125,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->robot_avoidance_gain = get_parameter("robot_avoidance_gain").as_double();
   formation_parameters->obstacle_safe_distance = get_parameter("obstacle_safe_distance").as_double();
   formation_parameters->obstacle_avoidance_gain = get_parameter("obstacle_avoidance_gain").as_double();
+  formation_parameters->clf_enabled = get_parameter("clf_enabled").as_bool();
   formation_parameters->formation_clf_gain = get_parameter("formation_clf_gain").as_double();
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
   formation_parameters->verbose = get_parameter("verbose").as_bool();
@@ -165,6 +169,10 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
       formation_parameters->obstacle_avoidance_gain = param.as_double();
       RCLCPP_INFO(get_logger(), "Obstacle avoidance gain set to %f", formation_parameters->obstacle_avoidance_gain);
     }
+    if (param_name == "clf_enabled") {
+      formation_parameters->clf_enabled = param.as_bool();
+      RCLCPP_INFO(get_logger(), "CLF enabled set to %s", formation_parameters->clf_enabled ? "true" : "false");
+    }
     if (param_name == "formation_clf_gain") {
       formation_parameters->formation_clf_gain = param.as_double();
       RCLCPP_INFO(get_logger(), "Formation CLF gain set to %f", formation_parameters->formation_clf_gain);
@@ -201,12 +209,12 @@ void FormationNode::loop()
   // R << cos(yaw), sin(yaw), 0, -sin(yaw), cos(yaw), 0, 0, 0, 1;
   auto time = this->get_clock()->now().seconds();
   geometry_msgs::msg::Point target_msg;
-  double r_traj = 5.0;
-  double w_traj = 0.001;
-  target_msg.x = r_traj * cos(2 * M_PI * w_traj * time);
-  target_msg.y = r_traj * sin(2 * M_PI * w_traj * time);
+  double r_traj = get_parameter("target_radius").as_double();
+  double T_traj = get_parameter("target_period").as_double();
+  target_msg.x = r_traj * cos(2 * M_PI * time / T_traj);
+  target_msg.y = r_traj * sin(2 * M_PI * time / T_traj);
   target_pub_->publish(target_msg);
-  RCLCPP_INFO(get_logger(), "Target: x: %f, y: %f", target_msg.x, target_msg.y);
+  RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.x, target_msg.y);
 
   Eigen::Vector2d x_target{ target_msg.x, target_msg.y };
   Eigen::Vector2d x_target_local = (x_target - p_i);
@@ -232,8 +240,8 @@ void FormationNode::loop()
     vel_msg.acceleration.x = std::nan("1");
     vel_msg.acceleration.y = std::nan("1");
     vel_msg.acceleration.z = std::nan("1");
-    vel_msg.yaw = std::nan("1");
-    vel_msg.yaw_rate = atan2(x_target_local(1), x_target_local(0));
+    vel_msg.yaw = atan2(x_target_local(1), x_target_local(0));
+    vel_msg.yaw_rate = std::nan("1");
     vel_pub_->publish(vel_msg);
   } else {
     RCLCPP_WARN(this->get_logger(), "CBF FAILED.");

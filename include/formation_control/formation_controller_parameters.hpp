@@ -12,6 +12,7 @@ namespace formation_control
     double robot_avoidance_gain = std::numeric_limits<double>::signaling_NaN();
     double obstacle_safe_distance = std::numeric_limits<double>::signaling_NaN();
     double obstacle_avoidance_gain = std::numeric_limits<double>::signaling_NaN();
+    bool clf_enabled = false;
     double formation_clf_gain = std::numeric_limits<double>::signaling_NaN();
     double formation_radius = std::numeric_limits<double>::signaling_NaN();
     bool verbose = false;
