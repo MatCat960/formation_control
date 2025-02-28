@@ -111,6 +111,7 @@ void FormationNode::declareAndInitParams()
   declare_parameter("formation_radius", 1.0);
   declare_parameter("target_p_gain", 1.0);
   declare_parameter("target_d_gain", 0.1);
+  declare_parameter("verbose", true);
 
   formation_parameters = std::make_shared<FormationControlParameters>();
   formation_parameters->max_agents = get_parameter("max_agents").as_int();
@@ -123,7 +124,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->obstacle_avoidance_gain = get_parameter("obstacle_avoidance_gain").as_double();
   formation_parameters->formation_clf_gain = get_parameter("formation_clf_gain").as_double();
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
-
+  formation_parameters->verbose = get_parameter("verbose").as_bool();
   parameters_ch_ =
       add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) { return parametersCallback(parameters); });
 }
@@ -172,6 +173,10 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
       formation_parameters->formation_radius = param.as_double();
       RCLCPP_INFO(get_logger(), "Formation radius set to %f", formation_parameters->formation_radius);
     }
+    if (param_name == "verbose") {
+      formation_parameters->verbose = param.as_bool();
+      RCLCPP_INFO(get_logger(), "Verbose mode set to %s", formation_parameters->verbose ? "true" : "false");
+    }
   }
   return rcl_interfaces::msg::SetParametersResult();
 }
@@ -191,8 +196,9 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 }
 void FormationNode::loop()
 {
+  Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
   // Eigen::Matrix3d R;
-  // R << cos(p_i(2)), sin(p_i(2)), 0, -sin(p_i(2)), cos(p_i(2)), 0, 0, 0, 1;
+  // R << cos(yaw), sin(yaw), 0, -sin(yaw), cos(yaw), 0, 0, 0, 1;
   auto time = this->get_clock()->now().seconds();
   geometry_msgs::msg::Point target_msg;
   double r_traj = 5.0;
@@ -202,15 +208,19 @@ void FormationNode::loop()
   target_pub_->publish(target_msg);
   RCLCPP_INFO(get_logger(), "Target: x: %f, y: %f", target_msg.x, target_msg.y);
 
-  // std::cout << "udes: " << u_star.transpose() << std::endl;
-  double target_p_gain = get_parameter("target_p_gain").as_double();
-  double target_d_gain = get_parameter("target_d_gain").as_double();
-  auto position = odometry_.pose.pose.position;
-  auto velocity = odometry_.twist.twist.linear;
-  Eigen::Vector2d uopt;
-  Eigen::Vector2d u_star{ target_p_gain * (target_msg.x - position.x) - target_d_gain * velocity.x,
-                          target_p_gain * (target_msg.y - position.y) - target_d_gain * velocity.y };
+  Eigen::Vector2d x_target{ target_msg.x, target_msg.y };
+  Eigen::Vector2d x_target_local = (x_target - p_i);
 
+  Eigen::Vector2d config_centroid;
+  config_centroid.setZero();
+  for (auto n : neighbors_) {
+    config_centroid += (Eigen::Vector2d{ n.point.x, n.point.y } - p_i);
+  }
+
+  config_centroid /= (neighbors_.size() + 1);
+
+  Eigen::Vector2d uopt, u_star;
+  u_star = x_target_local - config_centroid;
   std::vector<double> h_out;
   if (FormationController::Return::SUCCESS ==
       formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_, obstacles_, h_out)) {
@@ -223,7 +233,7 @@ void FormationNode::loop()
     vel_msg.acceleration.y = std::nan("1");
     vel_msg.acceleration.z = std::nan("1");
     vel_msg.yaw = std::nan("1");
-    vel_msg.yaw_rate = atan2(target_msg.y - position.y, target_msg.x - position.x);
+    vel_msg.yaw_rate = atan2(x_target_local(1), x_target_local(0));
     vel_pub_->publish(vel_msg);
   } else {
     RCLCPP_WARN(this->get_logger(), "CBF FAILED.");
