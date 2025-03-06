@@ -3,6 +3,17 @@ from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from rclpy.time_source import USE_SIM_TIME_NAME
+
+# params
+MAX_AGENTS = 4
+MAX_VEL = 3.0
+MAX_OBSTACLES = 10
+ROBOT_SAFE_DIST = 5.0
+OBSTACLE_SAFE_DIST = 5.0
+CLF_ENABLED = True
+FORMATION_TYPE = 0
+
+
 def generate_launch_description():
     # Set the namespace to the UAV name
     ns = LaunchConfiguration('uav_name')
@@ -21,7 +32,15 @@ def generate_launch_description():
             name="formation_node",
             output="screen",
             #prefix=prefix,
-            parameters=[{USE_SIM_TIME_NAME:True}]
+            parameters=[{USE_SIM_TIME_NAME:True, 
+                        'max_agents':MAX_AGENTS,
+                        'max_velocity':MAX_VEL,
+                        'max_obstacles':MAX_OBSTACLES,
+                        'robot_safe_distance':ROBOT_SAFE_DIST,
+                        'obstacle_safe_distance':OBSTACLE_SAFE_DIST,
+                        'clf_enabled':CLF_ENABLED,
+                        'formation_type':FORMATION_TYPE
+                         }]
         ),
         Node(
             package='formation_control',

@@ -34,6 +34,11 @@ private:
    * Callback function for neighbors messages
    * @param msg Neighbors message
    */
+  void targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
+  /**
+   * Callback function for neighbors messages
+   * @param msg Neighbors message
+   */
   void neighborsCallback(const arrc_interfaces::msg::Neighbors::SharedPtr& msg);
   /**
    * Callback function for obstacles messages
@@ -58,6 +63,7 @@ private:
   std::string uav_name_;
   std::string gps_origin_frame_;
   nav_msgs::msg::Odometry odometry_;
+  nav_msgs::msg::Odometry target_odometry_;
   std::shared_ptr<FormationController> formation_controller;
   std::shared_ptr<FormationControlParameters> formation_parameters;
   OnSetParametersCallbackHandle::SharedPtr parameters_ch_;
@@ -65,9 +71,9 @@ private:
   std::vector<geometry_msgs::msg::PointStamped> obstacles_;
   // publishers
   rclcpp::Publisher<arrc_interfaces::msg::UavVelAcc>::SharedPtr vel_pub_;
-  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr target_pub_;
   // subscribers
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr target_sub_;
   rclcpp::Subscription<arrc_interfaces::msg::Neighbors>::SharedPtr neighbors_sub_;
   // timers
   rclcpp::TimerBase::SharedPtr main_timer_;
@@ -85,11 +91,12 @@ FormationNode::FormationNode() : Node("formation_controller")
   // ---------- subscriptions ---------
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "odometry", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->odomCallback(msg); });
+  target_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+      "target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
   neighbors_sub_ = this->create_subscription<arrc_interfaces::msg::Neighbors>(
       "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
   vel_pub_ = this->create_publisher<arrc_interfaces::msg::UavVelAcc>("command/setVelocityAcceleration", 1);
-  target_pub_ = this->create_publisher<geometry_msgs::msg::Point>("target", 1);
   // ---------- timers ----------
   main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
 }
@@ -192,6 +199,10 @@ void FormationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
   odometry_ = *msg;
 }
+void FormationNode::targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+  target_odometry_ = *msg;
+}
 void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::SharedPtr& msg)
 {
   neighbors_.clear();
@@ -205,18 +216,21 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 void FormationNode::loop()
 {
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
-  // Eigen::Matrix3d R;
-  // R << cos(yaw), sin(yaw), 0, -sin(yaw), cos(yaw), 0, 0, 0, 1;
-  auto time = this->get_clock()->now().seconds();
-  geometry_msgs::msg::Point target_msg;
-  double r_traj = get_parameter("target_radius").as_double();
-  double T_traj = get_parameter("target_period").as_double();
-  target_msg.x = r_traj * cos(2 * M_PI * time / T_traj);
-  target_msg.y = r_traj * sin(2 * M_PI * time / T_traj);
-  target_pub_->publish(target_msg);
-  RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.x, target_msg.y);
+  RCLCPP_INFO(get_logger(), "Max agents set to %i", formation_parameters->max_agents);
 
-  Eigen::Vector2d x_target{ target_msg.x, target_msg.y };
+  // // Eigen::Matrix3d R;
+  // // R << cos(yaw), sin(yaw), 0, -sin(yaw), cos(yaw), 0, 0, 0, 1;
+  // auto time = this->get_clock()->now().seconds();
+  // geometry_msgs::msg::Point target_msg;
+  // double r_traj = get_parameter("target_radius").as_double();
+  // double T_traj = get_parameter("target_period").as_double();
+  // target_msg.x = r_traj * cos(2 * M_PI * time / T_traj);
+  // target_msg.y = r_traj * sin(2 * M_PI * time / T_traj);
+  // target_pub_->publish(target_msg);
+  // RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.x, target_msg.y);
+
+  Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
+  RCLCPP_INFO(get_logger(), "Target:  %f, %f", x_target(0), x_target(1));
   Eigen::Vector2d x_target_local = (x_target - p_i);
 
   Eigen::Vector2d config_centroid;
