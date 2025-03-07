@@ -57,10 +57,14 @@ add_executable(target_node src/target_node.cpp)
 ament_target_dependencies(target_node ${dependencies})
 target_link_libraries(target_node ${PROJECT_NAME} fmt::fmt)
 
+add_executable(obstacles_node src/obstacles_node.cpp)
+ament_target_dependencies(obstacles_node ${dependencies})
+target_link_libraries(obstacles_node ${PROJECT_NAME} fmt::fmt)
+
 
 ament_export_targets(${PROJECT_NAME}_TARGETS HAS_LIBRARY_TARGET)
 
-install(TARGETS ${PROJECT_NAME}_node target_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}_node target_node obstacles_node DESTINATION lib/${PROJECT_NAME})
 
 install(
     TARGETS ${PROJECT_NAME}

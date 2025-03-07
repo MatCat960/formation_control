@@ -117,10 +117,7 @@ void FormationNode::declareAndInitParams()
   declare_parameter("clf_enabled", true);
   declare_parameter("formation_clf_gain", 0.1);
   declare_parameter("formation_radius", 3.0);
-  declare_parameter("target_radius", 5.0);
-  declare_parameter("target_period", 60.0);
-  declare_parameter("target_p_gain", 1.0);
-  declare_parameter("target_d_gain", 0.1);
+  declare_parameter("formation_type", 0);
   declare_parameter("verbose", true);
 
   formation_parameters = std::make_shared<FormationControlParameters>();
@@ -135,6 +132,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->clf_enabled = get_parameter("clf_enabled").as_bool();
   formation_parameters->formation_clf_gain = get_parameter("formation_clf_gain").as_double();
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
+  formation_parameters->formation_type = get_parameter("formation_type").as_int();
   formation_parameters->verbose = get_parameter("verbose").as_bool();
   parameters_ch_ =
       add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) { return parametersCallback(parameters); });
@@ -188,6 +186,10 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
       formation_parameters->formation_radius = param.as_double();
       RCLCPP_INFO(get_logger(), "Formation radius set to %f", formation_parameters->formation_radius);
     }
+    if (param_name == "formation_type") {
+      formation_parameters->formation_type = param.as_int();
+      RCLCPP_INFO(get_logger(), "Formation type set to %i", formation_parameters->formation_type);
+    }
     if (param_name == "verbose") {
       formation_parameters->verbose = param.as_bool();
       RCLCPP_INFO(get_logger(), "Verbose mode set to %s", formation_parameters->verbose ? "true" : "false");
@@ -217,17 +219,6 @@ void FormationNode::loop()
 {
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
   RCLCPP_INFO(get_logger(), "Max agents set to %i", formation_parameters->max_agents);
-
-  // // Eigen::Matrix3d R;
-  // // R << cos(yaw), sin(yaw), 0, -sin(yaw), cos(yaw), 0, 0, 0, 1;
-  // auto time = this->get_clock()->now().seconds();
-  // geometry_msgs::msg::Point target_msg;
-  // double r_traj = get_parameter("target_radius").as_double();
-  // double T_traj = get_parameter("target_period").as_double();
-  // target_msg.x = r_traj * cos(2 * M_PI * time / T_traj);
-  // target_msg.y = r_traj * sin(2 * M_PI * time / T_traj);
-  // target_pub_->publish(target_msg);
-  // RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.x, target_msg.y);
 
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
   RCLCPP_INFO(get_logger(), "Target:  %f, %f", x_target(0), x_target(1));

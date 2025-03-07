@@ -15,6 +15,7 @@ namespace formation_control
     bool clf_enabled = false;
     double formation_clf_gain = std::numeric_limits<double>::signaling_NaN();
     double formation_radius = std::numeric_limits<double>::signaling_NaN();
+    int formation_type = std::numeric_limits<double>::signaling_NaN();
     bool verbose = false;
   };
 } // namespace formation_control
