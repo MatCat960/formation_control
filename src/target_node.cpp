@@ -41,9 +41,9 @@ private:
 public:
   explicit TargetNode();
 };
-TargetNode::TargetNode() : Node("formation_controller")
+TargetNode::TargetNode() : Node("target_node")
 {
-  RCLCPP_INFO(this->get_logger(), "Starting Formation Controller...");
+  RCLCPP_INFO(this->get_logger(), "Starting Target Node...");
   // ----------- params ----------
   declareAndInitParams();
   // ---------- publishers ----------
@@ -71,6 +71,8 @@ void TargetNode::loop()
   target_msg.header.frame_id = "common_origin";
   target_msg.pose.pose.position.x = r_traj * cos(2 * M_PI * time / T_traj);
   target_msg.pose.pose.position.y = r_traj * sin(2 * M_PI * time / T_traj);
+  target_msg.twist.twist.linear.x = -2 * M_PI / T_traj * r_traj * sin(2 * M_PI * time / T_traj);
+  target_msg.twist.twist.linear.y = 2 * M_PI / T_traj * r_traj * cos(2 * M_PI * time / T_traj);
   target_pub_->publish(target_msg);
   RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.pose.pose.position.x, target_msg.pose.pose.position.y);
 }
