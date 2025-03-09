@@ -74,6 +74,7 @@ private:
   // subscribers
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr target_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr obs_sub_;
   rclcpp::Subscription<arrc_interfaces::msg::Neighbors>::SharedPtr neighbors_sub_;
   // timers
   rclcpp::TimerBase::SharedPtr main_timer_;
@@ -92,7 +93,9 @@ FormationNode::FormationNode() : Node("formation_controller")
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "odometry", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->odomCallback(msg); });
   target_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
+      "/target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
+  obs_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
+      "obstacles", 1, [this](geometry_msgs::msg::PoseArray::SharedPtr msg) { this->obstaclesCallback(msg); });
   neighbors_sub_ = this->create_subscription<arrc_interfaces::msg::Neighbors>(
       "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
@@ -205,6 +208,19 @@ void FormationNode::targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
   target_odometry_ = *msg;
 }
+void FormationNode::obstaclesCallback(const geometry_msgs::msg::PoseArray::SharedPtr& msg)
+{
+  obstacles_.erase(obstacles_.begin(), obstacles_.end());
+  for (int i = 0; i < msg->poses.size(); i++){
+    geometry_msgs::msg::PointStamped pt;
+    pt.header = msg->header;
+    pt.point.x = msg->poses[i].position.x;
+    pt.point.y = msg->poses[i].position.y;
+    pt.point.z = msg->poses[i].position.z;
+    obstacles_.push_back(pt);
+  }
+  
+}
 void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::SharedPtr& msg)
 {
   neighbors_.clear();
@@ -218,11 +234,13 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 void FormationNode::loop()
 {
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
-  RCLCPP_INFO(get_logger(), "Max agents set to %i", formation_parameters->max_agents);
 
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
-  RCLCPP_INFO(get_logger(), "Target:  %f, %f", x_target(0), x_target(1));
   Eigen::Vector2d x_target_local = (x_target - p_i);
+
+  // for (int i = 0; i < obstacles_.size(); i++) {
+  //   std::cout << "Pos: " << obstacles_[i].point.x << ", " << obstacles_[i].point.y << ", " << obstacles_[i].point.z << "\n";
+  // }
 
   Eigen::Vector2d config_centroid;
   config_centroid.setZero();

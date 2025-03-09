@@ -50,7 +50,7 @@ ObstaclesNode::ObstaclesNode() : Node("obstacles_node")
   // ----------- params ----------
   declareAndInitParams();
   // ---------- publishers ----------
-  obs_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/obstacles", 1);
+  obs_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("obstacles", 1);
   // ---------- timers ----------
   main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
 }
@@ -59,20 +59,23 @@ void ObstaclesNode::declareAndInitParams()
 {
   declare_parameter<std::vector<double>>("x_obstacles", {});
   declare_parameter<std::vector<double>>("y_obstacles", {});
+  declare_parameter<std::vector<double>>("z_obstacles", {});
 
   std::vector<double> x_obs = get_parameter("x_obstacles").as_double_array();
   std::vector<double> y_obs = get_parameter("y_obstacles").as_double_array();
-  if (x_obs.size() != y_obs.size()){
-    RCLCPP_ERROR(this->get_logger(), "Obstacles x and y sizes do not match!");
+  std::vector<double> z_obs = get_parameter("z_obstacles").as_double_array();
+  if (x_obs.size() != y_obs.size() || x_obs.size() != z_obs.size()){
+    RCLCPP_ERROR(this->get_logger(), "Obstacles sizes do not match!");
   }
   // std::cout << "Obstacles x: \n" << x_obs << std::endl;
   // std::cout << "Obstacles y: \n" << y_obs << std::endl;
   obs_msg_.header.frame_id = "common_origin";
   for (int i = 0; i < x_obs.size(); i++){
-    std::cout << "obs " << i  << ": " << x_obs[i] << ", " << y_obs[i] << std::endl;
+    std::cout << "obs " << i  << ": " << x_obs[i] << ", " << y_obs[i] << ", " << z_obs[i] << std::endl;
     geometry_msgs::msg::Pose pose_msg;
     pose_msg.position.x = x_obs[i];
     pose_msg.position.y = y_obs[i];
+    pose_msg.position.z = z_obs[i];
     obs_msg_.poses.push_back(pose_msg);
   }
   
@@ -85,7 +88,7 @@ void ObstaclesNode::loop()
   obs_msg_.header.stamp = this->get_clock()->now();
   obs_pub_->publish(obs_msg_);
   for (int i = 0; i < obs_msg_.poses.size(); i++){
-    RCLCPP_INFO(get_logger(), "Obstacle %i: x: %.2f, y: %.2f", i, obs_msg_.poses[i].position.x, obs_msg_.poses[i].position.y);  
+    RCLCPP_INFO(get_logger(), "Obstacle %i: x: %.2f, y: %.2f, z: %.2f", i, obs_msg_.poses[i].position.x, obs_msg_.poses[i].position.y, obs_msg_.poses[i].position.z);  
   }
 }
 
