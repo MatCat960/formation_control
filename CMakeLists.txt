@@ -82,6 +82,10 @@ install(
   DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/
 )
+install(
+  DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}/
+)
 install(PROGRAMS
     scripts/sim_neighbors_sensing_node.py
     DESTINATION lib/${PROJECT_NAME}

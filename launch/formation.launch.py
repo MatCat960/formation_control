@@ -7,22 +7,27 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from rclpy.time_source import USE_SIM_TIME_NAME
 
-# params
-MAX_AGENTS = 4
-MAX_VEL = 3.0
-ROBOT_SAFE_DIST = 5.0
-OBSTACLE_SAFE_DIST = 5.0
-CLF_ENABLED = True
-FORMATION_TYPE = 0
-
-# read obstacles
+# read params from file
 path = get_package_share_directory("formation_control")
-config_path = os.path.join(path, "config", "obstacles.json")
+config_path = os.path.join(path, "config", "config.json")
 with open(config_path, "r") as file:
     data = json.load(file)
 obstacles = np.array(data["obstacles"])
 
 MAX_OBSTACLES = obstacles.shape[0]
+MAX_AGENTS = data["max_agents"]
+MAX_VEL = data["max_vel"]
+ROBOT_SAFE_DIST = data["robot_safety_dist"]
+OBSTACLE_SAFE_DIST = data["obstacles_safety_dist"]
+CLF_ENABLED = data["clf_enabled"]
+FORMATION_TYPE = data["formation_type"]
+FORMATION_RADIUS = data["formation_radius"]
+TARGET_R = data["target_trajectory_r"]
+TARGET_T = data["target_trajectory_t"]
+FORMATION_CLF_GAIN = data["formation_clf_gain"]
+OBSTACLE_AVOIDANCE_GAIN = data["obstacle_avoidance_gain"]
+ROBOT_AVOIDANCE_GAIN = data["robot_avoidance_gain"]
+
 
 def generate_launch_description():
     # Set the namespace to the UAV name
@@ -48,8 +53,12 @@ def generate_launch_description():
                         'max_obstacles':MAX_OBSTACLES,
                         'robot_safe_distance':ROBOT_SAFE_DIST,
                         'obstacle_safe_distance':OBSTACLE_SAFE_DIST,
+                        "robot_avoidance_gain":ROBOT_AVOIDANCE_GAIN,
+                        "obstacle_avoidance_gain":OBSTACLE_AVOIDANCE_GAIN,
                         'clf_enabled':CLF_ENABLED,
-                        'formation_type':FORMATION_TYPE
+                        'formation_type':FORMATION_TYPE,
+                        "formation_radius":FORMATION_RADIUS,
+                        "formation_clf_gain":FORMATION_CLF_GAIN
                          }]
         ),
         Node(
@@ -68,6 +77,17 @@ def generate_launch_description():
                         'x_obstacles':obstacles[:, 0].tolist(),
                         'y_obstacles':obstacles[:, 1].tolist(),
                         'z_obstacles':obstacles[:, 2].tolist()
+                         }]
+        ),
+        Node(
+            package='formation_control',
+            executable='target_node',
+            name="target_node",
+            output="screen",
+            namespace=ns,
+            parameters=[{USE_SIM_TIME_NAME:True, 
+                        'target_radius':TARGET_R,
+                        'target_period':TARGET_T
                          }]
         )
     ])

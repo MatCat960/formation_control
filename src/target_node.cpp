@@ -47,7 +47,7 @@ TargetNode::TargetNode() : Node("target_node")
   // ----------- params ----------
   declareAndInitParams();
   // ---------- publishers ----------
-  target_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/target", 1);
+  target_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("target", 1);
   // ---------- timers ----------
   main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
 }

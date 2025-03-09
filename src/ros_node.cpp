@@ -93,7 +93,7 @@ FormationNode::FormationNode() : Node("formation_controller")
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "odometry", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->odomCallback(msg); });
   target_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "/target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
+      "target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
   obs_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
       "obstacles", 1, [this](geometry_msgs::msg::PoseArray::SharedPtr msg) { this->obstaclesCallback(msg); });
   neighbors_sub_ = this->create_subscription<arrc_interfaces::msg::Neighbors>(
