@@ -88,7 +88,7 @@ void ObstaclesNode::loop()
   obs_msg_.header.stamp = this->get_clock()->now();
   obs_pub_->publish(obs_msg_);
   for (int i = 0; i < obs_msg_.poses.size(); i++){
-    RCLCPP_INFO(get_logger(), "Obstacle %i: x: %.2f, y: %.2f, z: %.2f", i, obs_msg_.poses[i].position.x, obs_msg_.poses[i].position.y, obs_msg_.poses[i].position.z);  
+    // RCLCPP_INFO(get_logger(), "Obstacle %i: x: %.2f, y: %.2f, z: %.2f", i, obs_msg_.poses[i].position.x, obs_msg_.poses[i].position.y, obs_msg_.poses[i].position.z);  
   }
 }
 

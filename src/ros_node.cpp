@@ -113,6 +113,7 @@ void FormationNode::declareAndInitParams()
   declare_parameter("max_velocity", 3.0);
   declare_parameter("neighbor_validity_ms", 2000);
   declare_parameter("max_obstacles", 10);
+  declare_parameter("num_obstacles", 3);
   declare_parameter("robot_safe_distance", 2.0);
   declare_parameter("robot_avoidance_gain", 5.0);
   declare_parameter("obstacle_safe_distance", 5.0);
@@ -128,6 +129,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->max_velocity = get_parameter("max_velocity").as_double();
   formation_parameters->neighbor_validity_ms = get_parameter("neighbor_validity_ms").as_int();
   formation_parameters->max_obstacles = get_parameter("max_obstacles").as_int();
+  formation_parameters->num_obstacles = get_parameter("num_obstacles").as_int();
   formation_parameters->robot_safe_distance = get_parameter("robot_safe_distance").as_double();
   formation_parameters->robot_avoidance_gain = get_parameter("robot_avoidance_gain").as_double();
   formation_parameters->obstacle_safe_distance = get_parameter("obstacle_safe_distance").as_double();
@@ -160,6 +162,10 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
     if (param_name == "max_obstacles") {
       formation_parameters->max_obstacles = param.as_int();
       RCLCPP_INFO(get_logger(), "Max obstacles set to %i", formation_parameters->max_obstacles);
+    }
+    if (param_name == "num_obstacles") {
+      formation_parameters->num_obstacles = param.as_int();
+      RCLCPP_INFO(get_logger(), "Num obstacles set to %i", formation_parameters->num_obstacles);
     }
     if (param_name == "robot_safe_distance") {
       formation_parameters->robot_safe_distance = param.as_double();
@@ -198,6 +204,7 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
       RCLCPP_INFO(get_logger(), "Verbose mode set to %s", formation_parameters->verbose ? "true" : "false");
     }
   }
+  // obstacles_.resize(formation_parameters->num_obstacles);
   return rcl_interfaces::msg::SetParametersResult();
 }
 void FormationNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -210,13 +217,11 @@ void FormationNode::targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 }
 void FormationNode::obstaclesCallback(const geometry_msgs::msg::PoseArray::SharedPtr& msg)
 {
-  obstacles_.erase(obstacles_.begin(), obstacles_.end());
+  obstacles_.clear();
   for (int i = 0; i < msg->poses.size(); i++){
     geometry_msgs::msg::PointStamped pt;
     pt.header = msg->header;
-    pt.point.x = msg->poses[i].position.x;
-    pt.point.y = msg->poses[i].position.y;
-    pt.point.z = msg->poses[i].position.z;
+    pt.point = msg->poses[i].position;
     obstacles_.push_back(pt);
   }
   
@@ -234,7 +239,6 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 void FormationNode::loop()
 {
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
-
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
   Eigen::Vector2d x_target_local = (x_target - p_i);
 

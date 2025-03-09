@@ -64,11 +64,11 @@ namespace formation_control
 
     // Obstacle avoidance constraints
     double obstacle_safe_distance_squared = pow(params_->obstacle_safe_distance, 2);
-    for (size_t i = neighbors_number; i < obstacles_number + neighbors_number; i++) {
-      Eigen::Vector2d o_j_i{ -neighbors_.at(i).x, -neighbors_.at(i).y };
-      constraint_matrix_(i, 0) = 2 * o_j_i.x();
-      constraint_matrix_(i, 1) = 2 * o_j_i.y();
-      constraint_matrix_(i, 2) = 0.0; // slack var
+    for (size_t i = 0; i < obstacles_number; i++) {
+      Eigen::Vector2d o_j_i{ -obstacles_.at(i).x, -obstacles_.at(i).y };
+      constraint_matrix_(neighbors_number+i, 0) = 2 * o_j_i.x();
+      constraint_matrix_(neighbors_number+i, 1) = 2 * o_j_i.y();
+      constraint_matrix_(neighbors_number+i, 2) = 0.0; // slack var
       double h_i = pow(o_j_i.norm(), 2) - obstacle_safe_distance_squared;
       constraint_upperbound_(i) = params_->obstacle_avoidance_gain * pow(h_i, 3);
       h_out.push_back(h_i);

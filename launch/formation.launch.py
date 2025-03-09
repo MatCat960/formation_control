@@ -14,7 +14,8 @@ with open(config_path, "r") as file:
     data = json.load(file)
 obstacles = np.array(data["obstacles"])
 
-MAX_OBSTACLES = obstacles.shape[0]
+NUM_OBSTACLES = obstacles.shape[0]
+MAX_OBSTACLES = data["max_obstacles"]
 MAX_AGENTS = data["max_agents"]
 MAX_VEL = data["max_vel"]
 ROBOT_SAFE_DIST = data["robot_safety_dist"]
@@ -51,6 +52,7 @@ def generate_launch_description():
                         'max_agents':MAX_AGENTS,
                         'max_velocity':MAX_VEL,
                         'max_obstacles':MAX_OBSTACLES,
+                        'num_obstacles':NUM_OBSTACLES,
                         'robot_safe_distance':ROBOT_SAFE_DIST,
                         'obstacle_safe_distance':OBSTACLE_SAFE_DIST,
                         "robot_avoidance_gain":ROBOT_AVOIDANCE_GAIN,

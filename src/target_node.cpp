@@ -74,7 +74,7 @@ void TargetNode::loop()
   target_msg.twist.twist.linear.x = -2 * M_PI / T_traj * r_traj * sin(2 * M_PI * time / T_traj);
   target_msg.twist.twist.linear.y = 2 * M_PI / T_traj * r_traj * cos(2 * M_PI * time / T_traj);
   target_pub_->publish(target_msg);
-  RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.pose.pose.position.x, target_msg.pose.pose.position.y);
+  // RCLCPP_INFO(get_logger(), "Target: x: %.2f, y: %.2f", target_msg.pose.pose.position.x, target_msg.pose.pose.position.y);
 }
 
 int main(int argc, char** argv)
