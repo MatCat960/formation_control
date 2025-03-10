@@ -28,20 +28,9 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='formation_control',
-            executable='formation_control_node',
             namespace=ns,
-            name="formation_node",
-            output="screen",
-            #prefix=prefix,
-            parameters=[{USE_SIM_TIME_NAME:True},config_path]
+            executable='sim_neighbors_sensing_node.py',
+            parameters=[{USE_SIM_TIME_NAME:True}]
         ),
 
-        Node(
-            package='formation_control',
-            executable='target_node',
-            name="target_node",
-            output="screen",
-            namespace=ns,
-            parameters=[{USE_SIM_TIME_NAME:True},config_path]
-        )
     ])

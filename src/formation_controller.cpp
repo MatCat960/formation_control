@@ -52,25 +52,25 @@ namespace formation_control
     // Collision avoidance with other robots
     double robot_safe_distance_squared = pow(params_->robot_safe_distance, 2);
     for (size_t i = 0; i < neighbors_number; i++) {
-      Eigen::Vector2d p_j_i{ -neighbors_.at(i).x, -neighbors_.at(i).y };
-      center += p_j_i;
-      constraint_matrix_(i, 0) = 2 * p_j_i.x();
-      constraint_matrix_(i, 1) = 2 * p_j_i.y();
+      Eigen::Vector2d p_i_j{ neighbors_.at(i).x, neighbors_.at(i).y };
+      center -= p_i_j;
+      constraint_matrix_(i, 0) = 2 * p_i_j.x();
+      constraint_matrix_(i, 1) = 2 * p_i_j.y();
       constraint_matrix_(i, 2) = 0.0; // slack var
-      double h_i = pow(p_j_i.norm(), 2) - robot_safe_distance_squared;
-      constraint_upperbound_(i) = params_->robot_avoidance_gain * pow(h_i, 3);
+      double h_i = p_i_j.dot(p_i_j) - robot_safe_distance_squared;
+      constraint_lowerbound_(i) = - params_->robot_avoidance_gain * pow(h_i, 3);
       h_out.push_back(h_i);
     }
 
     // Obstacle avoidance constraints
     double obstacle_safe_distance_squared = pow(params_->obstacle_safe_distance, 2);
     for (size_t i = 0; i < obstacles_number; i++) {
-      Eigen::Vector2d o_j_i{ -obstacles_.at(i).x, -obstacles_.at(i).y };
-      constraint_matrix_(neighbors_number+i, 0) = 2 * o_j_i.x();
-      constraint_matrix_(neighbors_number+i, 1) = 2 * o_j_i.y();
+      Eigen::Vector2d o_i_j{ obstacles_.at(i).x, obstacles_.at(i).y };
+      constraint_matrix_(neighbors_number+i, 0) = 2 * o_i_j.x();
+      constraint_matrix_(neighbors_number+i, 1) = 2 * o_i_j.y();
       constraint_matrix_(neighbors_number+i, 2) = 0.0; // slack var
-      double h_i = pow(o_j_i.norm(), 2) - obstacle_safe_distance_squared;
-      constraint_upperbound_(i) = params_->obstacle_avoidance_gain * pow(h_i, 3);
+      double h_i = o_i_j.dot(o_i_j) - obstacle_safe_distance_squared;
+      constraint_lowerbound_(neighbors_number+i) = - params_->obstacle_avoidance_gain * pow(h_i, 3);
       h_out.push_back(h_i);
     }
 
