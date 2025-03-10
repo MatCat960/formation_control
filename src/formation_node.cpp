@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <geometry_msgs/msg/detail/point_stamped__struct.hpp>
 #include <nav_msgs/msg/detail/odometry__struct.hpp>
+#include <rclcpp/logging.hpp>
 #include <string>
 #include <tf2/utils.h>
 
@@ -94,8 +95,6 @@ FormationNode::FormationNode() : Node("formation_controller")
       "odometry", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->odomCallback(msg); });
   target_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "target", 1, [this](nav_msgs::msg::Odometry::SharedPtr msg) { this->targetCallback(msg); });
-  obs_sub_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
-      "obstacles", 1, [this](geometry_msgs::msg::PoseArray::SharedPtr msg) { this->obstaclesCallback(msg); });
   neighbors_sub_ = this->create_subscription<arrc_interfaces::msg::Neighbors>(
       "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
@@ -113,23 +112,24 @@ void FormationNode::declareAndInitParams()
   declare_parameter("max_velocity", 3.0);
   declare_parameter("neighbor_validity_ms", 2000);
   declare_parameter("max_obstacles", 10);
-  declare_parameter("num_obstacles", 3);
   declare_parameter("robot_safe_distance", 2.0);
   declare_parameter("robot_avoidance_gain", 5.0);
-  declare_parameter("obstacle_safe_distance", 5.0);
+  declare_parameter("obstacle_safe_distance", 2.0);
   declare_parameter("obstacle_avoidance_gain", 1.0);
   declare_parameter("clf_enabled", true);
   declare_parameter("formation_clf_gain", 0.1);
   declare_parameter("formation_radius", 3.0);
   declare_parameter("formation_type", 0);
   declare_parameter("verbose", true);
+  declare_parameter<std::vector<double>>("x_obstacles", { 100.0 });
+  declare_parameter<std::vector<double>>("y_obstacles", { 100.0 });
+  declare_parameter<std::vector<double>>("z_obstacles", { 100.0 });
 
   formation_parameters = std::make_shared<FormationControlParameters>();
   formation_parameters->max_agents = get_parameter("max_agents").as_int();
   formation_parameters->max_velocity = get_parameter("max_velocity").as_double();
   formation_parameters->neighbor_validity_ms = get_parameter("neighbor_validity_ms").as_int();
   formation_parameters->max_obstacles = get_parameter("max_obstacles").as_int();
-  formation_parameters->num_obstacles = get_parameter("num_obstacles").as_int();
   formation_parameters->robot_safe_distance = get_parameter("robot_safe_distance").as_double();
   formation_parameters->robot_avoidance_gain = get_parameter("robot_avoidance_gain").as_double();
   formation_parameters->obstacle_safe_distance = get_parameter("obstacle_safe_distance").as_double();
@@ -139,6 +139,24 @@ void FormationNode::declareAndInitParams()
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
   formation_parameters->formation_type = get_parameter("formation_type").as_int();
   formation_parameters->verbose = get_parameter("verbose").as_bool();
+  std::vector<double> x_obs = get_parameter("x_obstacles").as_double_array();
+  std::vector<double> y_obs = get_parameter("y_obstacles").as_double_array();
+  std::vector<double> z_obs = get_parameter("z_obstacles").as_double_array();
+  if (x_obs.size() != y_obs.size() || x_obs.size() != z_obs.size()) {
+    RCLCPP_WARN(this->get_logger(), "Obstacles sizes do not match! will take minimum common number");
+  }
+  auto obs_num = std::min(x_obs.size(), std::min(y_obs.size(), z_obs.size()));
+  obstacles_.clear();
+  obstacles_.reserve(obs_num);
+  for (size_t i = 0; i < obs_num; ++i) {
+    std::cout << "obs " << i << ": " << x_obs[i] << ", " << y_obs[i] << ", " << z_obs[i] << std::endl;
+    geometry_msgs::msg::PointStamped point_msg;
+    point_msg.header.frame_id = gps_origin_frame_;
+    point_msg.point.x = x_obs[i];
+    point_msg.point.y = y_obs[i];
+    point_msg.point.z = z_obs[i];
+    obstacles_.push_back(point_msg);
+  }
   parameters_ch_ =
       add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) { return parametersCallback(parameters); });
 }
@@ -162,10 +180,6 @@ rcl_interfaces::msg::SetParametersResult FormationNode::parametersCallback(const
     if (param_name == "max_obstacles") {
       formation_parameters->max_obstacles = param.as_int();
       RCLCPP_INFO(get_logger(), "Max obstacles set to %i", formation_parameters->max_obstacles);
-    }
-    if (param_name == "num_obstacles") {
-      formation_parameters->num_obstacles = param.as_int();
-      RCLCPP_INFO(get_logger(), "Num obstacles set to %i", formation_parameters->num_obstacles);
     }
     if (param_name == "robot_safe_distance") {
       formation_parameters->robot_safe_distance = param.as_double();
@@ -215,17 +229,6 @@ void FormationNode::targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
   target_odometry_ = *msg;
 }
-void FormationNode::obstaclesCallback(const geometry_msgs::msg::PoseArray::SharedPtr& msg)
-{
-  obstacles_.clear();
-  for (int i = 0; i < msg->poses.size(); i++){
-    geometry_msgs::msg::PointStamped pt;
-    pt.header = msg->header;
-    pt.point = msg->poses[i].position;
-    obstacles_.push_back(pt);
-  }
-  
-}
 void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::SharedPtr& msg)
 {
   neighbors_.clear();
@@ -238,20 +241,25 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 }
 void FormationNode::loop()
 {
+  if (target_odometry_.header.frame_id.empty()) {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
+    return;
+  }
+  if (odometry_.header.frame_id.empty()) {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
+    return;
+  }
+
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
   Eigen::Vector2d x_target_local = (x_target - p_i);
-
-  // for (int i = 0; i < obstacles_.size(); i++) {
-  //   std::cout << "Pos: " << obstacles_[i].point.x << ", " << obstacles_[i].point.y << ", " << obstacles_[i].point.z << "\n";
-  // }
 
   Eigen::Vector2d config_centroid;
   config_centroid.setZero();
   for (auto n : neighbors_) {
     config_centroid += (Eigen::Vector2d{ n.point.x, n.point.y } - p_i);
   }
-
+  // TODO team logic
   config_centroid /= (neighbors_.size() + 1);
 
   Eigen::Vector2d uopt, u_star;

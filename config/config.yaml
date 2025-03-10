@@ -1,0 +1,20 @@
+/**:
+  ros__parameters:
+    max_agents: 10
+    max_velocity: 3.0
+    neighbor_validity_ms: 3000
+    max_obstacles: 3
+    robot_safe_distance: 2.0
+    robot_avoidance_gain: 1.0
+    obstacles_safe_distance: 1.0
+    obstacle_avoidance_gain: 1.0
+    clf_enabled: true
+    verbose: true
+    formation_type: 0
+    formation_radius: 5.0
+    formation_clf_gain: 0.1
+    target_trajectory_r: 5.0
+    target_trajectory_t: 60.0
+    x_obstacles: [10.0, 20.0, 30.0]
+    y_obstacles: [10.0, 20.0, 30.0]
+    z_obstacles: [3.0, 3.0, 3.0]
