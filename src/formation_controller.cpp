@@ -23,6 +23,7 @@ namespace formation_control
                                                             const geometry_msgs::msg::Pose& pose,
                                                             const std::vector<geometry_msgs::msg::PointStamped>& neighbors,
                                                             const std::vector<geometry_msgs::msg::PointStamped>& obstacles,
+                                                            const Eigen::Vector2d& target,
                                                             std::vector<double>& h_out)
   {
     setNeighborsAndObstacles(pose, neighbors, obstacles);
@@ -76,6 +77,7 @@ namespace formation_control
 
     // CLF for desired distance from center
     if (params_->clf_enabled) {
+      if (params_->formation_type == 0){               // Circle formation
       center /= neighbors_number + 1;
       double V, K, z;
       z = center.norm();
@@ -90,7 +92,16 @@ namespace formation_control
       V = pow(z - params_->formation_radius, 2);
       constraint_upperbound_(constraints_number - 1) = -params_->formation_clf_gain * V;
       h_out.push_back(V);
-    }
+    } else if (params_->formation_type == 1){           // Line formation
+      double V, z;
+      z = target.norm();
+      V = pow(z, 2);
+      constraint_matrix_(constraints_number - 1, 0) = -2 * target(0);
+      constraint_matrix_(constraints_number - 1, 1) = -2 * target(1);
+      constraint_matrix_(constraints_number - 1, 2) = -1.0;
+      constraint_upperbound_(constraints_number - 1) = -params_->formation_clf_gain * V; //- 2 * target_pos.transpose() * target_vel;
+      h_out.push_back(V);
+    }}
     if (params_->verbose) {
       std::cout << fmt::format("[collision avoidance] h: [{}]", fmt::join(h_out.begin(), h_out.end(), ",")) << std::endl;
     }
@@ -159,6 +170,7 @@ namespace formation_control
       });
       neighbors_.insert(it, new_neighbor);
     }
+    std::cout << "[Collision avoidance] number of neighbors: " << neighbors_.size() << std::endl;
     obstacles_.clear();
     obstacles_.reserve(obstacles.size());
     for (auto o : obstacles) {
