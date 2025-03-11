@@ -20,3 +20,4 @@
     z_obstacles: [3.0, 3.0, 3.0]
     team_sizes: [3, 3]
     team_ids: [1, 4, 5, 2, 3, 6]
+    team_phases: [0, 3.1415926]

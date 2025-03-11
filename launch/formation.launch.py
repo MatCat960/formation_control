@@ -36,12 +36,5 @@ def generate_launch_description():
             parameters=[{USE_SIM_TIME_NAME:True},config_path]
         ),
 
-        Node(
-            package='formation_control',
-            executable='target_node',
-            name="target_node",
-            output="screen",
-            namespace=ns,
-            parameters=[{USE_SIM_TIME_NAME:True},config_path]
-        )
+        
     ])
