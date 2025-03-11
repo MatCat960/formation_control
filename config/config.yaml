@@ -18,3 +18,5 @@
     x_obstacles: [10.0, 20.0, 30.0]
     y_obstacles: [10.0, 20.0, 30.0]
     z_obstacles: [3.0, 3.0, 3.0]
+    team_sizes: [3, 3]
+    team_ids: [1, 4, 5, 2, 3, 6]

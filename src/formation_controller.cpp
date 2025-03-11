@@ -58,7 +58,7 @@ namespace formation_control
       constraint_matrix_(i, 1) = 2 * p_i_j.y();
       constraint_matrix_(i, 2) = 0.0; // slack var
       double h_i = p_i_j.dot(p_i_j) - robot_safe_distance_squared;
-      constraint_lowerbound_(i) = - params_->robot_avoidance_gain * pow(h_i, 3);
+      constraint_lowerbound_(i) = -params_->robot_avoidance_gain * pow(h_i, 3);
       h_out.push_back(h_i);
     }
 
@@ -66,11 +66,11 @@ namespace formation_control
     double obstacle_safe_distance_squared = pow(params_->obstacle_safe_distance, 2);
     for (size_t i = 0; i < obstacles_number; i++) {
       Eigen::Vector2d o_i_j{ obstacles_.at(i).x, obstacles_.at(i).y };
-      constraint_matrix_(neighbors_number+i, 0) = 2 * o_i_j.x();
-      constraint_matrix_(neighbors_number+i, 1) = 2 * o_i_j.y();
-      constraint_matrix_(neighbors_number+i, 2) = 0.0; // slack var
+      constraint_matrix_(neighbors_number + i, 0) = 2 * o_i_j.x();
+      constraint_matrix_(neighbors_number + i, 1) = 2 * o_i_j.y();
+      constraint_matrix_(neighbors_number + i, 2) = 0.0; // slack var
       double h_i = o_i_j.dot(o_i_j) - obstacle_safe_distance_squared;
-      constraint_lowerbound_(neighbors_number+i) = - params_->obstacle_avoidance_gain * pow(h_i, 3);
+      constraint_lowerbound_(neighbors_number + i) = -params_->obstacle_avoidance_gain * pow(h_i, 3);
       h_out.push_back(h_i);
     }
 
@@ -79,7 +79,7 @@ namespace formation_control
       center /= neighbors_number + 1;
       double V, K, z;
       z = center.norm();
-      if (params_->verbose){
+      if (params_->verbose) {
         std::cout << "[formation control] Center: " << center << std::endl;
         std::cout << "[formation control] Distance from center: " << z << std::endl;
       }

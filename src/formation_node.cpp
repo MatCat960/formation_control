@@ -62,6 +62,8 @@ private:
   rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter>& parameters);
 
   std::string uav_name_;
+  uint32_t uav_id_;
+  std::vector<int> uav_team_;
   std::string gps_origin_frame_;
   nav_msgs::msg::Odometry odometry_;
   nav_msgs::msg::Odometry target_odometry_;
@@ -70,6 +72,7 @@ private:
   OnSetParametersCallbackHandle::SharedPtr parameters_ch_;
   std::vector<geometry_msgs::msg::PointStamped> neighbors_;
   std::vector<geometry_msgs::msg::PointStamped> obstacles_;
+
   // publishers
   rclcpp::Publisher<arrc_interfaces::msg::UavVelAcc>::SharedPtr vel_pub_;
   // subscribers
@@ -108,6 +111,15 @@ void FormationNode::declareAndInitParams()
   uav_name_ = get_namespace();
   uav_name_.erase(0, 1);
   gps_origin_frame_ = uav_name_ + "/gps_origin";
+  RCLCPP_INFO(this->get_logger(), "UAV name: %s", uav_name_.c_str());
+  // Extract UAV ID from name (format: "Drone{id}")
+  try {
+    uav_id_ = std::stoul(uav_name_.substr(5)); // Skip "Drone" prefix and convert remaining digits
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to extract UAV ID from name '%s': %s", uav_name_.c_str(), e.what());
+    uav_id_ = 0;
+  }
+  RCLCPP_INFO(this->get_logger(), "UAV ID: %d", uav_id_);
   declare_parameter("max_agents", 10);
   declare_parameter("max_velocity", 3.0);
   declare_parameter("neighbor_validity_ms", 2000);
@@ -124,7 +136,8 @@ void FormationNode::declareAndInitParams()
   declare_parameter<std::vector<double>>("x_obstacles", { 100.0 });
   declare_parameter<std::vector<double>>("y_obstacles", { 100.0 });
   declare_parameter<std::vector<double>>("z_obstacles", { 100.0 });
-
+  declare_parameter<std::vector<int>>("team_sizes", { 1 });
+  declare_parameter<std::vector<int>>("team_ids", { 1 });
   formation_parameters = std::make_shared<FormationControlParameters>();
   formation_parameters->max_agents = get_parameter("max_agents").as_int();
   formation_parameters->max_velocity = get_parameter("max_velocity").as_double();
@@ -139,6 +152,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
   formation_parameters->formation_type = get_parameter("formation_type").as_int();
   formation_parameters->verbose = get_parameter("verbose").as_bool();
+
   std::vector<double> x_obs = get_parameter("x_obstacles").as_double_array();
   std::vector<double> y_obs = get_parameter("y_obstacles").as_double_array();
   std::vector<double> z_obs = get_parameter("z_obstacles").as_double_array();
@@ -156,6 +170,37 @@ void FormationNode::declareAndInitParams()
     point_msg.point.y = y_obs[i];
     point_msg.point.z = z_obs[i];
     obstacles_.push_back(point_msg);
+  }
+
+  std::vector<int64_t> team_sizes = get_parameter("team_sizes").as_integer_array();
+  std::vector<int64_t> team_ids = get_parameter("team_ids").as_integer_array();
+
+  // Create vector of teams
+  std::vector<std::vector<int>> teams;
+  size_t id_idx = 0;
+  for (size_t i = 0; i < team_sizes.size(); i++) {
+    std::vector<int> team;
+    for (size_t j = 0; j < static_cast<size_t>(team_sizes[i]); j++) {
+      if (id_idx < team_ids.size()) {
+        team.push_back(team_ids[id_idx++]);
+      }
+    }
+    teams.push_back(team);
+  }
+
+  // Find my team
+  uav_team_.clear();
+  for (const auto& team : teams) {
+    if (std::find(team.begin(), team.end(), uav_id_) != team.end()) {
+      uav_team_ = team;
+      break;
+    }
+  }
+  
+  if (uav_team_.empty()) {
+    RCLCPP_WARN(this->get_logger(), "UAV ID %d not found in any team!", uav_id_);
+  }else{
+    RCLCPP_INFO_STREAM(this->get_logger(), fmt::format("UAV team: {}", fmt::join(uav_team_, ",")));
   }
   parameters_ch_ =
       add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) { return parametersCallback(parameters); });
@@ -254,19 +299,35 @@ void FormationNode::loop()
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
   Eigen::Vector2d x_target_local = (x_target - p_i);
 
+  std::vector<geometry_msgs::msg::PointStamped> neighbors_team;
+  std::vector<geometry_msgs::msg::PointStamped> all_obstacles;
+  for (auto o : obstacles_) {
+    all_obstacles.push_back(o);
+  }
+  for (auto n : neighbors_) {
+    std::string frame_id = n.header.frame_id;
+    size_t start = frame_id.find("Drone") + 5; // Skip "Drone"
+    size_t end = frame_id.find("/", start);
+    auto id = std::stoi(frame_id.substr(start, end - start));
+    if (std::find(uav_team_.begin(), uav_team_.end(), id) != uav_team_.end()) {
+      neighbors_team.push_back(n);
+    } else {
+      all_obstacles.push_back(n);
+    }
+  }
+
   Eigen::Vector2d config_centroid;
   config_centroid.setZero();
   for (auto n : neighbors_) {
     config_centroid += (Eigen::Vector2d{ n.point.x, n.point.y } - p_i);
   }
-  // TODO team logic
   config_centroid /= (neighbors_.size() + 1);
 
   Eigen::Vector2d uopt, u_star;
   u_star = x_target_local - config_centroid;
   std::vector<double> h_out;
   if (FormationController::Return::SUCCESS ==
-      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_, obstacles_, h_out)) {
+      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, h_out)) {
     arrc_interfaces::msg::UavVelAcc vel_msg;
     vel_msg.header.frame_id = gps_origin_frame_;
     vel_msg.velocity.x = uopt.x();
