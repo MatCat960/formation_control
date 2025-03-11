@@ -10,7 +10,7 @@
     obstacle_avoidance_gain: 1.0
     clf_enabled: true
     verbose: true
-    formation_type: 1
+    formation_type: 0
     formation_radius: 5.0
     formation_clf_gain: 0.1
     target_trajectory_r: 5.0
@@ -18,9 +18,9 @@
     x_obstacles: [10.0, 20.0, 30.0]
     y_obstacles: [10.0, 20.0, 30.0]
     z_obstacles: [3.0, 3.0, 3.0]
-    team_sizes: [5]
-    team_ids: [1, 2, 3, 4, 5]
-    team_phases: [0]
+    team_sizes: [3,3]
+    team_ids: [1, 2, 3, 4, 5, 6]
+    team_phases: [0.0, 3.1415]
     x_segment: [-15.0, 15.0]
     y_segment: [8.0, 8.0]
     z_segment: [3.0, 3.0]
