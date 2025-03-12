@@ -19,6 +19,7 @@
 #include "formation_control/formation_controller_parameters.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 using namespace std::chrono_literals;
@@ -59,6 +60,16 @@ private:
    */
   void loop();
   /**
+   * Publisher function to visualize desired line formation
+   * @param vertices Vector of vertices
+   */
+  void publishLine(const std::vector<geometry_msgs::msg::PointStamped>& vertices);
+  /**
+   * Publisher function to visualize desired point
+   * @param pt Point to be published
+   */
+  void publishPoint(const Eigen::Vector2d& pt);
+  /**
    * Declare and initialize parameters
    */
   void declareAndInitParams();
@@ -81,9 +92,12 @@ private:
   std::vector<geometry_msgs::msg::PointStamped> neighbors_;
   std::vector<geometry_msgs::msg::PointStamped> obstacles_;
   std::vector<geometry_msgs::msg::PointStamped> vertices_; 
+  bool gui_;
 
   // publishers
   rclcpp::Publisher<arrc_interfaces::msg::UavVelAcc>::SharedPtr vel_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr gui_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr pt_pub_;
   // subscribers
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr target_sub_;
@@ -111,6 +125,10 @@ FormationNode::FormationNode() : Node("formation_controller")
       "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
   vel_pub_ = this->create_publisher<arrc_interfaces::msg::UavVelAcc>("command/setVelocityAcceleration", 1);
+  if (gui_){
+    gui_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("desired_formation", 1);
+    pt_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>("closest_point", 1);
+  }
   // ---------- timers ----------
   main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
 }
@@ -142,6 +160,7 @@ void FormationNode::declareAndInitParams()
   declare_parameter("formation_radius", 3.0);
   declare_parameter("formation_type", 0);
   declare_parameter("verbose", true);
+  declare_parameter("gui", true);
   declare_parameter<std::vector<double>>("x_obstacles", { 100.0 });
   declare_parameter<std::vector<double>>("y_obstacles", { 100.0 });
   declare_parameter<std::vector<double>>("z_obstacles", { 100.0 });
@@ -164,6 +183,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
   formation_parameters->formation_type = get_parameter("formation_type").as_int();
   formation_parameters->verbose = get_parameter("verbose").as_bool();
+  gui_ = get_parameter("gui").as_bool();
 
   std::vector<double> x_obs = get_parameter("x_obstacles").as_double_array();
   std::vector<double> y_obs = get_parameter("y_obstacles").as_double_array();
@@ -325,6 +345,36 @@ Eigen::Vector2d FormationNode::closestPointOnSegment(const geometry_msgs::msg::P
   Eigen::Vector2d p = A + t * AB;
   return p;
 }
+void FormationNode::publishLine(const std::vector<geometry_msgs::msg::PointStamped>& vertices)
+{
+  auto marker = visualization_msgs::msg::Marker();
+  marker.header.frame_id = gps_origin_frame_;
+  marker.header.stamp = this->now();
+  marker.id = 0;
+  marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+  marker.action = visualization_msgs::msg::Marker::ADD;
+  marker.scale.x = 0.05;
+  marker.color.r = 1.0;
+  marker.color.g = 0.0;
+  marker.color.b = 0.0;
+  marker.color.a = 1.0;
+  for (int i = 0; i < vertices.size(); i++){
+    marker.points.push_back(vertices[i].point);
+    if (i % 2 != 0){
+      marker.points.push_back(vertices[i].point);
+    }
+  }
+  gui_pub_->publish(marker);
+}
+void FormationNode::publishPoint(const Eigen::Vector2d& pt)
+{
+  geometry_msgs::msg::PointStamped pt_msg;
+  pt_msg.header.stamp = this->now();
+  pt_msg.header.frame_id = gps_origin_frame_;
+  pt_msg.point.x = pt(0);
+  pt_msg.point.y = pt(1);
+  pt_pub_->publish(pt_msg);
+}
 void FormationNode::loop()
 {
   if (target_odometry_.header.frame_id.empty()) {
@@ -379,6 +429,10 @@ void FormationNode::loop()
     std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl; 
     x_target_local = p_closest - p_i;
     u_star.setZero();
+    if (gui_){
+      publishLine(vertices_);
+      publishPoint(p_closest);
+    }
   }
   std::vector<double> h_out;
   if (FormationController::Return::SUCCESS ==

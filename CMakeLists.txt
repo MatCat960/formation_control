@@ -19,6 +19,7 @@ find_package(Eigen3 3.4 REQUIRED)
 
 # ROS dependencies
 find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -28,6 +29,7 @@ find_package(qpOASES_e REQUIRED)
 set(dependencies
   "rclcpp"
   "nav_msgs"
+  "visualization_msgs"
   "tf2"
   "tf2_ros"
   "arrc_interfaces"

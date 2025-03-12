@@ -10,6 +10,7 @@
     obstacle_avoidance_gain: 1.0
     clf_enabled: true
     verbose: true
+    gui: true
     formation_type: 1
     formation_radius: 5.0
     formation_clf_gain: 0.1
