@@ -75,10 +75,10 @@ void TargetNode::declareAndInitParams()
   declare_parameter("target_d_gain", 0.1);
   declare_parameter<std::vector<int>>("team_sizes", { 1 });
   declare_parameter<std::vector<int>>("team_ids", { 1 });
-  declare_parameter<std::vector<int>>("team_phases", { 0 });
+  declare_parameter<std::vector<double>>("team_phases", { 0 });
   std::vector<int64_t> team_sizes = get_parameter("team_sizes").as_integer_array();
   std::vector<int64_t> team_ids = get_parameter("team_ids").as_integer_array();
-  std::vector<int64_t> team_phases = get_parameter("team_phases").as_integer_array();
+  std::vector<double> team_phases = get_parameter("team_phases").as_double_array();
 
   // Create vector of teams
   std::vector<std::vector<int>> teams;
@@ -103,7 +103,7 @@ void TargetNode::declareAndInitParams()
       break;
     }
   }
-  
+
   if (uav_team_.empty()) {
     RCLCPP_WARN(this->get_logger(), "UAV ID %d not found in any team!", uav_id_);
   }else{

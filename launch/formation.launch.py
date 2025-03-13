@@ -57,7 +57,8 @@ def generate_launch_description():
         executable='formation_control_node',
         namespace=uav_name_param,
         name='formation_node',
-        parameters=[substitutions,param_file]
+        parameters=[substitutions,param_file],
+        output='screen'
     )
 
     return LaunchDescription([

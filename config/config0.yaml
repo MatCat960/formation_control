@@ -1,10 +1,10 @@
 /**:
   ros__parameters:
     max_agents: 10
-    max_velocity: 3.0
+    max_velocity: 5.0
     neighbor_validity_ms: 3000
     max_obstacles: 3
-    robot_safe_distance: 2.0
+    robot_safe_distance: 4.0
     robot_avoidance_gain: 1.0
     obstacles_safe_distance: 1.0
     obstacle_avoidance_gain: 1.0

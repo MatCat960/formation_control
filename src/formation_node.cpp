@@ -91,7 +91,7 @@ private:
   OnSetParametersCallbackHandle::SharedPtr parameters_ch_;
   std::vector<geometry_msgs::msg::PointStamped> neighbors_;
   std::vector<geometry_msgs::msg::PointStamped> obstacles_;
-  std::vector<geometry_msgs::msg::PointStamped> vertices_; 
+  std::vector<geometry_msgs::msg::PointStamped> vertices_;
   bool gui_;
 
   // publishers
@@ -246,7 +246,7 @@ void FormationNode::declareAndInitParams()
       break;
     }
   }
-  
+
   if (uav_team_.empty()) {
     RCLCPP_WARN(this->get_logger(), "UAV ID %d not found in any team!", uav_id_);
   }else{
@@ -426,7 +426,7 @@ void FormationNode::loop()
         p_closest = p;
       }
     }
-    std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl; 
+    std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl;
     x_target_local = p_closest - p_i;
     u_star.setZero();
     if (gui_){
@@ -449,7 +449,7 @@ void FormationNode::loop()
     vel_msg.yaw_rate = std::nan("1");
     vel_pub_->publish(vel_msg);
   } else {
-    RCLCPP_WARN(this->get_logger(), "CBF FAILED.");
+    RCLCPP_ERROR(this->get_logger(), "CBF FAILED.");
   }
 }
 
