@@ -19,8 +19,8 @@
 #include "formation_control/formation_controller_parameters.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include "visualization_msgs/msg/marker.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
 using namespace formation_control;
@@ -54,7 +54,8 @@ private:
    * @param robot Robot position
    * @return Closest point
    */
-  Eigen::Vector2d closestPointOnSegment(const geometry_msgs::msg::PointStamped& v1, const geometry_msgs::msg::PointStamped& v2, const Eigen::Vector2d& robot);
+  Eigen::Vector2d closestPointOnSegment(const geometry_msgs::msg::PointStamped& v1, const geometry_msgs::msg::PointStamped& v2,
+                                        const Eigen::Vector2d& robot);
   /**
    * Main loop function
    */
@@ -89,7 +90,7 @@ private:
   std::shared_ptr<FormationController> formation_controller;
   std::shared_ptr<FormationControlParameters> formation_parameters;
   OnSetParametersCallbackHandle::SharedPtr parameters_ch_;
-  std::vector<geometry_msgs::msg::PointStamped> neighbors_;
+  std::vector<nav_msgs::msg::Odometry> neighbors_;
   std::vector<geometry_msgs::msg::PointStamped> obstacles_;
   std::vector<geometry_msgs::msg::PointStamped> vertices_;
   bool gui_;
@@ -125,7 +126,7 @@ FormationNode::FormationNode() : Node("formation_controller")
       "neighbors_odometry", 1, [this](arrc_interfaces::msg::Neighbors::SharedPtr msg) { this->neighborsCallback(msg); });
   // ---------- publishers ----------
   vel_pub_ = this->create_publisher<arrc_interfaces::msg::UavVelAcc>("command/setVelocityAcceleration", 1);
-  if (gui_){
+  if (gui_) {
     gui_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("desired_formation", 1);
     pt_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>("closest_point", 1);
   }
@@ -212,14 +213,14 @@ void FormationNode::declareAndInitParams()
   size_t vert_num = std::min(x_segment.size(), std::min(y_segment.size(), z_segment.size()));
   vertices_.clear();
   vertices_.reserve(vert_num);
-  for (size_t i = 0; i < vert_num; i++){
-        std::cout << "Vertex " << i << ": " << x_segment[i] << ", " << y_segment[i] << ", " << z_segment[i] << std::endl;
-        geometry_msgs::msg::PointStamped point_msg;
-        point_msg.header.frame_id = gps_origin_frame_;
-        point_msg.point.x = x_segment[i];
-        point_msg.point.y = y_segment[i];
-        point_msg.point.z = y_segment[i];
-        vertices_.push_back(point_msg);
+  for (size_t i = 0; i < vert_num; i++) {
+    std::cout << "Vertex " << i << ": " << x_segment[i] << ", " << y_segment[i] << ", " << z_segment[i] << std::endl;
+    geometry_msgs::msg::PointStamped point_msg;
+    point_msg.header.frame_id = gps_origin_frame_;
+    point_msg.point.x = x_segment[i];
+    point_msg.point.y = y_segment[i];
+    point_msg.point.z = y_segment[i];
+    vertices_.push_back(point_msg);
   }
 
   std::vector<int64_t> team_sizes = get_parameter("team_sizes").as_integer_array();
@@ -249,7 +250,7 @@ void FormationNode::declareAndInitParams()
 
   if (uav_team_.empty()) {
     RCLCPP_WARN(this->get_logger(), "UAV ID %d not found in any team!", uav_id_);
-  }else{
+  } else {
     RCLCPP_INFO_STREAM(this->get_logger(), fmt::format("UAV team: {}", fmt::join(uav_team_, ",")));
   }
   parameters_ch_ =
@@ -328,19 +329,17 @@ void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::Sha
 {
   neighbors_.clear();
   std::transform(msg->neighbors.begin(), msg->neighbors.end(), std::back_inserter(neighbors_), [](const nav_msgs::msg::Odometry& neighbor) {
-    geometry_msgs::msg::PointStamped point;
-    point.header = neighbor.header;
-    point.point = neighbor.pose.pose.position;
-    return point;
+    return neighbor;
   });
 }
-Eigen::Vector2d FormationNode::closestPointOnSegment(const geometry_msgs::msg::PointStamped& v1, const geometry_msgs::msg::PointStamped& v2, const Eigen::Vector2d& robot)
+Eigen::Vector2d FormationNode::closestPointOnSegment(const geometry_msgs::msg::PointStamped& v1, const geometry_msgs::msg::PointStamped& v2,
+                                                     const Eigen::Vector2d& robot)
 {
-  Eigen::Vector2d A{v1.point.x, v1.point.y};
-  Eigen::Vector2d B{v2.point.x, v2.point.y};
+  Eigen::Vector2d A{ v1.point.x, v1.point.y };
+  Eigen::Vector2d B{ v2.point.x, v2.point.y };
   Eigen::Vector2d AB = B - A;
   Eigen::Vector2d AR = robot - A;
-  double t = AR.dot(AB) / AB.dot(AB);     // project AR onto AB
+  double t = AR.dot(AB) / AB.dot(AB); // project AR onto AB
   t = std::clamp(t, 0.0, 1.0);
   Eigen::Vector2d p = A + t * AB;
   return p;
@@ -358,9 +357,9 @@ void FormationNode::publishLine(const std::vector<geometry_msgs::msg::PointStamp
   marker.color.g = 0.0;
   marker.color.b = 0.0;
   marker.color.a = 1.0;
-  for (int i = 0; i < vertices.size(); i++){
+  for (size_t i = 0; i < vertices.size(); i++) {
     marker.points.push_back(vertices[i].point);
-    if (i % 2 != 0){
+    if (i % 2 != 0) {
       marker.points.push_back(vertices[i].point);
     }
   }
@@ -390,7 +389,7 @@ void FormationNode::loop()
   Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
   Eigen::Vector2d x_target_local;
 
-  std::vector<geometry_msgs::msg::PointStamped> neighbors_team;
+  std::vector<nav_msgs::msg::Odometry> neighbors_team;
   std::vector<geometry_msgs::msg::PointStamped> all_obstacles;
   for (auto o : obstacles_) {
     all_obstacles.push_back(o);
@@ -403,40 +402,45 @@ void FormationNode::loop()
     if (std::find(uav_team_.begin(), uav_team_.end(), id) != uav_team_.end()) {
       neighbors_team.push_back(n);
     } else {
-      all_obstacles.push_back(n);
+      geometry_msgs::msg::PointStamped p;
+      p.header = n.header;
+      p.point = n.pose.pose.position;
+      all_obstacles.push_back(p);
     }
   }
 
   Eigen::Vector2d uopt, u_star;
-  if (formation_parameters->formation_type == 0){
+  if (formation_parameters->formation_type == 0) {
     x_target_local = (x_target - p_i);
     Eigen::Vector2d config_centroid;
-    config_centroid.setZero();
-    for (auto n : neighbors_) {
-      config_centroid += (Eigen::Vector2d{ n.point.x, n.point.y } - p_i);
+    config_centroid = p_i;
+    for (auto n : neighbors_team) {
+      config_centroid += (Eigen::Vector2d{ n.pose.pose.position.x, n.pose.pose.position.y });
     }
-    config_centroid /= (neighbors_.size() + 1);
-    u_star = x_target_local - config_centroid;
+    config_centroid /= (neighbors_team.size() + 1);
+    u_star = x_target - config_centroid;
+    std::cout << "U_star: " << u_star.transpose() << std::endl;
   } else {
     // Find closest point on segment
-    Eigen::Vector2d p_closest{100.0, 100.0};
-    for (size_t i = 0; i < vertices_.size()-1; i++){
-      Eigen::Vector2d p = closestPointOnSegment(vertices_[i], vertices_[i+1], p_i);
-      if ((p - p_i).norm() < (p_closest - p_i).norm()){
+    Eigen::Vector2d p_closest{ 100.0, 100.0 };
+    for (size_t i = 0; i < vertices_.size() - 1; i++) {
+      Eigen::Vector2d p = closestPointOnSegment(vertices_[i], vertices_[i + 1], p_i);
+      if ((p - p_i).norm() < (p_closest - p_i).norm()) {
         p_closest = p;
       }
     }
     std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl;
     x_target_local = p_closest - p_i;
     u_star.setZero();
-    if (gui_){
+    if (gui_) {
       publishLine(vertices_);
       publishPoint(p_closest);
     }
   }
   std::vector<double> h_out;
   if (FormationController::Return::SUCCESS ==
-      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, x_target_local, h_out)) {
+      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, x_target, h_out)) {
+    std::cout << "uopt: " << uopt.transpose() << std::endl;
     arrc_interfaces::msg::UavVelAcc vel_msg;
     vel_msg.header.frame_id = gps_origin_frame_;
     vel_msg.velocity.x = uopt.x();

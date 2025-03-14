@@ -21,10 +21,9 @@ namespace formation_control
 
   FormationController::Return FormationController::applyCbf(Eigen::Vector2d& uopt, Eigen::Vector2d& ustar,
                                                             const geometry_msgs::msg::Pose& pose,
-                                                            const std::vector<geometry_msgs::msg::PointStamped>& neighbors,
+                                                            const std::vector<nav_msgs::msg::Odometry>& neighbors,
                                                             const std::vector<geometry_msgs::msg::PointStamped>& obstacles,
-                                                            const Eigen::Vector2d& target,
-                                                            std::vector<double>& h_out)
+                                                            const Eigen::Vector2d& target, std::vector<double>& h_out)
   {
     setNeighborsAndObstacles(pose, neighbors, obstacles);
     size_t neighbors_number = std::min(neighbors_.size(), (size_t)params_->max_agents);
@@ -48,13 +47,15 @@ namespace formation_control
     upperbound_.head(2).setConstant(params_->max_velocity);
     gradient_vector_.head(2) = -ustar;
     gradient_vector_(2) = 0.0; // slack variable
-
-    Eigen::Vector2d center{ 0.0, 0.0 };
+    Eigen::Vector2d my_position{pose.position.x, pose.position.y};
+    Eigen::Vector2d center = my_position;
+    Eigen::Vector2d neighbors_velocity_sum{0.0,0.0};
     // Collision avoidance with other robots
     double robot_safe_distance_squared = pow(params_->robot_safe_distance, 2);
     for (size_t i = 0; i < neighbors_number; i++) {
-      Eigen::Vector2d p_i_j{ neighbors_.at(i).x, neighbors_.at(i).y };
-      center -= p_i_j;
+      Eigen::Vector2d p_i_j{ neighbors_.at(i).pose.pose.position.x, neighbors_.at(i).pose.pose.position.y };
+      center += my_position - p_i_j;
+      neighbors_velocity_sum += Eigen::Vector2d{neighbors_.at(i).twist.twist.linear.x, neighbors_.at(i).twist.twist.linear.y};
       constraint_matrix_(i, 0) = 2 * p_i_j.x();
       constraint_matrix_(i, 1) = 2 * p_i_j.y();
       constraint_matrix_(i, 2) = 0.0; // slack var
@@ -77,31 +78,34 @@ namespace formation_control
 
     // CLF for desired distance from center
     if (params_->clf_enabled) {
-      if (params_->formation_type == 0){               // Circle formation
-      center /= neighbors_number + 1;
-      double V, K, z;
-      z = center.norm();
-      if (params_->verbose) {
-        std::cout << "[formation control] Center: " << center << std::endl;
-        std::cout << "[formation control] Distance from center: " << z << std::endl;
+      if (params_->formation_type == 0) { // Circle formation
+        center /= neighbors_number + 1;
+        double V, d;
+        d = (my_position -center).norm();
+        V = pow(d - params_->formation_radius, 2);
+        if (params_->verbose) {
+          std::cout << "[formation control] Center: " << center << std::endl;
+          std::cout << "[formation control] Distance from center: " << d << std::endl;
+        }
+        Eigen::Vector2d K;
+        K = 2 * ((d - params_->formation_radius) / d) * (my_position - center)/(neighbors_number + 1.0);
+        constraint_matrix_(constraints_number - 1, 0) = neighbors_number * K(0);
+        constraint_matrix_(constraints_number - 1, 1) = neighbors_number * K(1);
+        constraint_matrix_(constraints_number - 1, 2) = -1.0;
+
+        constraint_upperbound_(constraints_number - 1) = K.dot(neighbors_velocity_sum) - params_->formation_clf_gain * V;
+        h_out.push_back(V);
+      } else if (params_->formation_type == 1) { // Line formation
+        double V, z;
+        z = target.norm();
+        V = pow(z, 2);
+        constraint_matrix_(constraints_number - 1, 0) = -2 * target(0);
+        constraint_matrix_(constraints_number - 1, 1) = -2 * target(1);
+        constraint_matrix_(constraints_number - 1, 2) = -1.0;
+        constraint_upperbound_(constraints_number - 1) = -params_->formation_clf_gain * V; //- 2 * target_pos.transpose() * target_vel;
+        h_out.push_back(V);
       }
-      K = 2 * (z - params_->formation_radius) / z;
-      constraint_matrix_(constraints_number - 1, 0) = -K * center.x();
-      constraint_matrix_(constraints_number - 1, 1) = -K * center.y();
-      constraint_matrix_(constraints_number - 1, 2) = -1.0;
-      V = pow(z - params_->formation_radius, 2);
-      constraint_upperbound_(constraints_number - 1) = -params_->formation_clf_gain * V;
-      h_out.push_back(V);
-    } else if (params_->formation_type == 1){           // Line formation
-      double V, z;
-      z = target.norm();
-      V = pow(z, 2);
-      constraint_matrix_(constraints_number - 1, 0) = -2 * target(0);
-      constraint_matrix_(constraints_number - 1, 1) = -2 * target(1);
-      constraint_matrix_(constraints_number - 1, 2) = -1.0;
-      constraint_upperbound_(constraints_number - 1) = -params_->formation_clf_gain * V; //- 2 * target_pos.transpose() * target_vel;
-      h_out.push_back(V);
-    }}
+    }
     if (params_->verbose) {
       std::cout << fmt::format("[collision avoidance] h: [{}]", fmt::join(h_out.begin(), h_out.end(), ",")) << std::endl;
     }
@@ -149,7 +153,7 @@ namespace formation_control
   }
 
   void FormationController::setNeighborsAndObstacles(const geometry_msgs::msg::Pose& pose,
-                                                     const std::vector<geometry_msgs::msg::PointStamped>& neighbors,
+                                                     const std::vector<nav_msgs::msg::Odometry>& neighbors,
                                                      const std::vector<geometry_msgs::msg::PointStamped>& obstacles)
   {
     neighbors_.clear();
@@ -162,11 +166,12 @@ namespace formation_control
                     << std::endl;
         continue;
       }
-      geometry_msgs::msg::Point new_neighbor;
-      new_neighbor.x = pose.position.x - n.point.x;
-      new_neighbor.y = pose.position.y - n.point.y;
+      nav_msgs::msg::Odometry new_neighbor;
+      new_neighbor.pose.pose.position.x = pose.position.x - n.pose.pose.position.x;
+      new_neighbor.pose.pose.position.y = pose.position.y - n.pose.pose.position.y;
+      new_neighbor.twist = n.twist;
       auto it = std::lower_bound(neighbors_.begin(), neighbors_.end(), new_neighbor, [](const auto& a, const auto& b) {
-        return sqrt(pow(a.x, 2) + pow(a.y, 2)) < sqrt(pow(b.x, 2) + pow(b.y, 2));
+        return sqrt(pow(a.pose.pose.position.x, 2) + pow(a.pose.pose.position.y, 2)) < sqrt(pow(b.pose.pose.position.x, 2) + pow(b.pose.pose.position.y, 2));
       });
       neighbors_.insert(it, new_neighbor);
     }

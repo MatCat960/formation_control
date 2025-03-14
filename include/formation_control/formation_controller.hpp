@@ -55,7 +55,7 @@ namespace formation_control
 
     std::shared_ptr<FormationControlParameters> params_;
     std::function<int64_t()> now_fn_;
-    std::vector<geometry_msgs::msg::Point> neighbors_;
+    std::vector<nav_msgs::msg::Odometry> neighbors_;
     std::vector<geometry_msgs::msg::Point> obstacles_;
 
   public:
@@ -78,7 +78,7 @@ namespace formation_control
      * @return Return
      */
     Return applyCbf(Eigen::Vector2d& uopt, Eigen::Vector2d& ustar, const geometry_msgs::msg::Pose& pose,
-                    const std::vector<geometry_msgs::msg::PointStamped>& neighbors,
+                    const std::vector<nav_msgs::msg::Odometry>& neighbors,
                     const std::vector<geometry_msgs::msg::PointStamped>& obstacles,
                     const Eigen::Vector2d& target, std::vector<double>& h_out);
     /**
@@ -89,7 +89,7 @@ namespace formation_control
      * @param obstacles obstacles in world frame
      * @return Return
      */
-    void setNeighborsAndObstacles(const geometry_msgs::msg::Pose& pose, const std::vector<geometry_msgs::msg::PointStamped>& neighbors,
+    void setNeighborsAndObstacles(const geometry_msgs::msg::Pose& pose, const std::vector<nav_msgs::msg::Odometry>& neighbors,
                                   const std::vector<geometry_msgs::msg::PointStamped>& obstacles);
   };
 } // namespace formation_control
