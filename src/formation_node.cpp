@@ -386,8 +386,8 @@ void FormationNode::loop()
   }
 
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
-  Eigen::Vector2d x_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
-  Eigen::Vector2d x_target_local;
+  Eigen::Vector2d p_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
+  Eigen::Vector2d p_target_local,v_target{target_odometry_.twist.twist.linear.x,target_odometry_.twist.twist.linear.y};
 
   std::vector<nav_msgs::msg::Odometry> neighbors_team;
   std::vector<geometry_msgs::msg::PointStamped> all_obstacles;
@@ -411,14 +411,14 @@ void FormationNode::loop()
 
   Eigen::Vector2d uopt, u_star;
   if (formation_parameters->formation_type == 0) {
-    x_target_local = (x_target - p_i);
+    p_target_local = (p_target - p_i);
     Eigen::Vector2d config_centroid;
     config_centroid = p_i;
     for (auto n : neighbors_team) {
       config_centroid += (Eigen::Vector2d{ n.pose.pose.position.x, n.pose.pose.position.y });
     }
     config_centroid /= (neighbors_team.size() + 1);
-    u_star = x_target - config_centroid;
+    u_star = p_target - config_centroid + v_target;
     std::cout << "U_star: " << u_star.transpose() << std::endl;
   } else {
     // Find closest point on segment
@@ -430,7 +430,7 @@ void FormationNode::loop()
       }
     }
     std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl;
-    x_target_local = p_closest - p_i;
+    p_target_local = p_closest - p_i;
     u_star.setZero();
     if (gui_) {
       publishLine(vertices_);
@@ -439,7 +439,7 @@ void FormationNode::loop()
   }
   std::vector<double> h_out;
   if (FormationController::Return::SUCCESS ==
-      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, x_target, h_out)) {
+      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, p_target, h_out)) {
     std::cout << "uopt: " << uopt.transpose() << std::endl;
     arrc_interfaces::msg::UavVelAcc vel_msg;
     vel_msg.header.frame_id = gps_origin_frame_;
@@ -449,7 +449,7 @@ void FormationNode::loop()
     vel_msg.acceleration.x = std::nan("1");
     vel_msg.acceleration.y = std::nan("1");
     vel_msg.acceleration.z = std::nan("1");
-    vel_msg.yaw = atan2(x_target_local(1), x_target_local(0));
+    vel_msg.yaw = atan2(p_target_local(1), p_target_local(0));
     vel_msg.yaw_rate = std::nan("1");
     vel_pub_->publish(vel_msg);
   } else {
