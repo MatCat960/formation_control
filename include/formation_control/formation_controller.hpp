@@ -78,9 +78,8 @@ namespace formation_control
      * @return Return
      */
     Return applyCbf(Eigen::Vector2d& uopt, Eigen::Vector2d& ustar, const geometry_msgs::msg::Pose& pose,
-                    const std::vector<nav_msgs::msg::Odometry>& neighbors,
-                    const std::vector<geometry_msgs::msg::PointStamped>& obstacles,
-                    const Eigen::Vector2d& target, std::vector<double>& h_out);
+                    const std::vector<nav_msgs::msg::Odometry>& neighbors, const std::vector<geometry_msgs::msg::PointStamped>& obstacles,
+                    const Eigen::Vector2d& target, std::vector<double>& h_out,const Eigen::Vector2d& target_velocity = { 0.0, 0.0 });
     /**
      * @brief Set the neighbors and obstacles
      *

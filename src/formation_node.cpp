@@ -409,7 +409,7 @@ void FormationNode::loop()
     }
   }
 
-  Eigen::Vector2d uopt, u_star;
+  Eigen::Vector2d uopt, u_star,u_target;
   if (formation_parameters->formation_type == 0) {
     p_target_local = (p_target - p_i);
     Eigen::Vector2d config_centroid;
@@ -420,7 +420,20 @@ void FormationNode::loop()
     config_centroid /= (neighbors_team.size() + 1);
     u_star = p_target - config_centroid + v_target;
     std::cout << "U_star: " << u_star.transpose() << std::endl;
-  } else {
+  } else if(formation_parameters->formation_type == 1) {
+    Eigen::Quaterniond target_q(target_odometry_.pose.pose.orientation.w,
+                              target_odometry_.pose.pose.orientation.x,
+                              target_odometry_.pose.pose.orientation.y,
+                              target_odometry_.pose.pose.orientation.z);
+    Eigen::Matrix2d target_R = Eigen::Matrix2d(target_q.toRotationMatrix().block<2,2>(0,0));
+    Eigen::Vector2d target_p(target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y);
+
+    for(auto& vertex : vertices_) {
+      Eigen::Vector2d v(vertex.point.x, vertex.point.y);
+      v = target_R * v + target_p;
+      vertex.point.x = v.x();
+      vertex.point.y = v.y();
+    }
     // Find closest point on segment
     Eigen::Vector2d p_closest{ 100.0, 100.0 };
     for (size_t i = 0; i < vertices_.size() - 1; i++) {
@@ -431,6 +444,7 @@ void FormationNode::loop()
     }
     std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl;
     p_target_local = p_closest - p_i;
+    //TODO compute target point velocity
     u_star.setZero();
     if (gui_) {
       publishLine(vertices_);
