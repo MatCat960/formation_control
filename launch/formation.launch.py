@@ -40,7 +40,7 @@ def generate_launch_description():
     # ------------------------------------------------------------
     # 3. Decide if we are in simulation mode
     # ------------------------------------------------------------
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
     # ------------------------------------------------------------
     # 4. Rewrite YAML with the environment-based substitutions
