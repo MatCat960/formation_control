@@ -11,7 +11,7 @@
     clf_enabled: true
     verbose: true
     gui: true
-    formation_type: 0
+    formation_type: 1
     formation_radius: 15.0
     formation_clf_gain: 1.0
     target_radius: 35.0
@@ -19,9 +19,9 @@
     x_obstacles: [-1000.0]
     y_obstacles: [-1000.0]
     z_obstacles: [3.0]
-    team_sizes: [3,3]
-    team_ids: [1, 2, 3, 4, 5, 6] #put actual drone numbers here
-    team_phases: [0.0, 3.1415]
-    x_segment: [-15.0, 15.0]
-    y_segment: [8.0, 8.0]
-    z_segment: [3.0, 3.0]
+    team_sizes: [6]
+    team_ids  : [1, 2, 3, 4, 5, 6] #put actual drone numbers here
+    team_phases: [0]
+    x_segment: [-20.0, 20.0]
+    y_segment: [0.0, 0.0]
+    z_segment: [5.0, 5.0]
