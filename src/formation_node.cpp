@@ -418,6 +418,24 @@ void FormationNode::loop()
     p_target_local = (p_target - p_i);
     u_star = p_target - config_centroid + v_target;
     std::cout << "U_star: " << u_star.transpose() << std::endl;
+    std::vector<double> h_out;
+    if (FormationController::Return::SUCCESS ==
+        formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, p_target, h_out)) {
+      std::cout << "uopt: " << uopt.transpose() << std::endl;
+      arrc_interfaces::msg::UavVelAcc vel_msg;
+      vel_msg.header.frame_id = gps_origin_frame_;
+      vel_msg.velocity.x = uopt.x();
+      vel_msg.velocity.y = uopt.y();
+      vel_msg.velocity.z = 0.0;
+      vel_msg.acceleration.x = std::nan("1");
+      vel_msg.acceleration.y = std::nan("1");
+      vel_msg.acceleration.z = std::nan("1");
+      vel_msg.yaw = atan2(p_target_local(1), p_target_local(0));
+      vel_msg.yaw_rate = std::nan("1");
+      vel_pub_->publish(vel_msg);
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "CBF FAILED.");
+    }
   } else if (formation_parameters->formation_type == 1) {
     if (target_odometry_.header.frame_id.empty()) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
@@ -429,16 +447,21 @@ void FormationNode::loop()
     Eigen::Matrix2d target_R = Eigen::Matrix2d(target_q.toRotationMatrix().block<2, 2>(0, 0));
     Eigen::Vector2d target_p(target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y);
 
+    std::vector<geometry_msgs::msg::PointStamped> global_vertices;
     for (auto& vertex : vertices_) {
       Eigen::Vector2d v(vertex.point.x, vertex.point.y);
       v = target_R * v + target_p;
-      vertex.point.x = v.x();
-      vertex.point.y = v.y();
+      geometry_msgs::msg::PointStamped global_vertex;
+      global_vertex.header.frame_id = target_odometry_.header.frame_id;
+      global_vertex.point.x = v.x();
+      global_vertex.point.y = v.y();
+      global_vertex.point.z = 0.0;
+      global_vertices.push_back(global_vertex);
     }
     // Find closest point on segment
-    Eigen::Vector2d p_closest{ 100.0, 100.0 };
-    for (size_t i = 0; i < vertices_.size() - 1; i++) {
-      Eigen::Vector2d p = closestPointOnSegment(vertices_[i], vertices_[i + 1], p_i);
+    Eigen::Vector2d p_closest{ std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() };
+    for (size_t i = 0; i < global_vertices.size() - 1; i++) {
+      Eigen::Vector2d p = closestPointOnSegment(global_vertices[i], global_vertices[i + 1], p_i);
       if ((p - p_i).norm() < (p_closest - p_i).norm()) {
         p_closest = p;
       }
@@ -451,25 +474,26 @@ void FormationNode::loop()
       publishLine(vertices_);
       publishPoint(p_closest);
     }
+    std::vector<double> h_out;
+    if (FormationController::Return::SUCCESS ==
+        formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, p_closest, h_out)) {
+      std::cout << "uopt: " << uopt.transpose() << std::endl;
+      arrc_interfaces::msg::UavVelAcc vel_msg;
+      vel_msg.header.frame_id = gps_origin_frame_;
+      vel_msg.velocity.x = uopt.x();
+      vel_msg.velocity.y = uopt.y();
+      vel_msg.velocity.z = 0.0;
+      vel_msg.acceleration.x = std::nan("1");
+      vel_msg.acceleration.y = std::nan("1");
+      vel_msg.acceleration.z = std::nan("1");
+      vel_msg.yaw = 0.0;
+      vel_msg.yaw_rate = std::nan("1");
+      vel_pub_->publish(vel_msg);
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "CBF FAILED.");
+    }
   }
-  std::vector<double> h_out;
-  if (FormationController::Return::SUCCESS ==
-      formation_controller->applyCbf(uopt, u_star, odometry_.pose.pose, neighbors_team, all_obstacles, p_target, h_out)) {
-    std::cout << "uopt: " << uopt.transpose() << std::endl;
-    arrc_interfaces::msg::UavVelAcc vel_msg;
-    vel_msg.header.frame_id = gps_origin_frame_;
-    vel_msg.velocity.x = uopt.x();
-    vel_msg.velocity.y = uopt.y();
-    vel_msg.velocity.z = 0.0;
-    vel_msg.acceleration.x = std::nan("1");
-    vel_msg.acceleration.y = std::nan("1");
-    vel_msg.acceleration.z = std::nan("1");
-    vel_msg.yaw = atan2(p_target_local(1), p_target_local(0));
-    vel_msg.yaw_rate = std::nan("1");
-    vel_pub_->publish(vel_msg);
-  } else {
-    RCLCPP_ERROR(this->get_logger(), "CBF FAILED.");
-  }
+
 }
 
 int main(int argc, char** argv)

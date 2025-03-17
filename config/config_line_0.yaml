@@ -4,7 +4,7 @@
     max_velocity: 3.0
     neighbor_validity_ms: 3000
     max_obstacles: 10
-    robot_safe_distance: 6.0
+    robot_safe_distance: 8.0
     robot_avoidance_gain: 1.0
     obstacles_safe_distance: 1.0
     obstacle_avoidance_gain: 1.0

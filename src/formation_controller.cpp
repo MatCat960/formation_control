@@ -99,7 +99,12 @@ namespace formation_control
         h_out.push_back(V);
       } else if (params_->formation_type == 1) { // Line formation
         double V;
+
         Eigen::Vector2d z = (my_position - target);
+        if (params_->verbose) {
+          std::cout << "[formation control] Target: " << target.transpose() << std::endl;
+          std::cout << "[formation control] Distance from target: " << z.norm() << std::endl;
+        }
         V = z.squaredNorm();
         constraint_matrix_(constraints_number - 1, 0) = 2 * z(0);
         constraint_matrix_(constraints_number - 1, 1) = 2 * z(1);
