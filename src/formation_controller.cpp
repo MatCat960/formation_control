@@ -46,6 +46,7 @@ namespace formation_control
     lowerbound_.head(2).setConstant(-params_->max_velocity);
     lowerbound_(2) = -std::numeric_limits<double>::epsilon();
     upperbound_.head(2).setConstant(params_->max_velocity);
+    upperbound_(2) = std::numeric_limits<double>::infinity();
     gradient_vector_.head(2) = -ustar;
     gradient_vector_(2) = 0.0; // slack variable
     Eigen::Vector2d my_position{ pose.position.x, pose.position.y };
