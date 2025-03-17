@@ -328,9 +328,8 @@ void FormationNode::targetCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 void FormationNode::neighborsCallback(const arrc_interfaces::msg::Neighbors::SharedPtr& msg)
 {
   neighbors_.clear();
-  std::transform(msg->neighbors.begin(), msg->neighbors.end(), std::back_inserter(neighbors_), [](const nav_msgs::msg::Odometry& neighbor) {
-    return neighbor;
-  });
+  std::transform(msg->neighbors.begin(), msg->neighbors.end(), std::back_inserter(neighbors_),
+                 [](const nav_msgs::msg::Odometry& neighbor) { return neighbor; });
 }
 Eigen::Vector2d FormationNode::closestPointOnSegment(const geometry_msgs::msg::PointStamped& v1, const geometry_msgs::msg::PointStamped& v2,
                                                      const Eigen::Vector2d& robot)
@@ -376,10 +375,6 @@ void FormationNode::publishPoint(const Eigen::Vector2d& pt)
 }
 void FormationNode::loop()
 {
-  if (target_odometry_.header.frame_id.empty()) {
-    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
-    return;
-  }
   if (odometry_.header.frame_id.empty()) {
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
     return;
@@ -387,7 +382,7 @@ void FormationNode::loop()
 
   Eigen::Vector2d p_i{ odometry_.pose.pose.position.x, odometry_.pose.pose.position.y };
   Eigen::Vector2d p_target{ target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y };
-  Eigen::Vector2d p_target_local,v_target{target_odometry_.twist.twist.linear.x,target_odometry_.twist.twist.linear.y};
+  Eigen::Vector2d p_target_local, v_target{ target_odometry_.twist.twist.linear.x, target_odometry_.twist.twist.linear.y };
 
   std::vector<nav_msgs::msg::Odometry> neighbors_team;
   std::vector<geometry_msgs::msg::PointStamped> all_obstacles;
@@ -409,26 +404,32 @@ void FormationNode::loop()
     }
   }
 
-  Eigen::Vector2d uopt, u_star,u_target;
+  Eigen::Vector2d uopt, u_star, u_target;
   if (formation_parameters->formation_type == 0) {
-    p_target_local = (p_target - p_i);
     Eigen::Vector2d config_centroid;
     config_centroid = p_i;
     for (auto n : neighbors_team) {
       config_centroid += (Eigen::Vector2d{ n.pose.pose.position.x, n.pose.pose.position.y });
     }
     config_centroid /= (neighbors_team.size() + 1);
+    if (target_odometry_.header.frame_id.empty()) {
+      p_target = config_centroid;
+    }
+    p_target_local = (p_target - p_i);
     u_star = p_target - config_centroid + v_target;
     std::cout << "U_star: " << u_star.transpose() << std::endl;
-  } else if(formation_parameters->formation_type == 1) {
-    Eigen::Quaterniond target_q(target_odometry_.pose.pose.orientation.w,
-                              target_odometry_.pose.pose.orientation.x,
-                              target_odometry_.pose.pose.orientation.y,
-                              target_odometry_.pose.pose.orientation.z);
-    Eigen::Matrix2d target_R = Eigen::Matrix2d(target_q.toRotationMatrix().block<2,2>(0,0));
+  } else if (formation_parameters->formation_type == 1) {
+    if (target_odometry_.header.frame_id.empty()) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Waiting for target odometry");
+      return;
+    }
+
+    Eigen::Quaterniond target_q(target_odometry_.pose.pose.orientation.w, target_odometry_.pose.pose.orientation.x,
+                                target_odometry_.pose.pose.orientation.y, target_odometry_.pose.pose.orientation.z);
+    Eigen::Matrix2d target_R = Eigen::Matrix2d(target_q.toRotationMatrix().block<2, 2>(0, 0));
     Eigen::Vector2d target_p(target_odometry_.pose.pose.position.x, target_odometry_.pose.pose.position.y);
 
-    for(auto& vertex : vertices_) {
+    for (auto& vertex : vertices_) {
       Eigen::Vector2d v(vertex.point.x, vertex.point.y);
       v = target_R * v + target_p;
       vertex.point.x = v.x();
@@ -444,7 +445,7 @@ void FormationNode::loop()
     }
     std::cout << "Closest point to Drone " << uav_id_ << " on segment: " << p_closest.transpose() << std::endl;
     p_target_local = p_closest - p_i;
-    //TODO compute target point velocity
+    // TODO compute target point velocity
     u_star.setZero();
     if (gui_) {
       publishLine(vertices_);
