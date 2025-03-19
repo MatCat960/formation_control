@@ -10,7 +10,6 @@
 #include <nav_msgs/msg/detail/odometry__struct.hpp>
 #include <string>
 #include <tf2/utils.h>
-#include <tf2/convert.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 // ROS includes
@@ -43,6 +42,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr target_pub_;
   // timers
   rclcpp::TimerBase::SharedPtr main_timer_;
+  double start_time_;
 
 public:
   explicit TargetNode();
@@ -56,6 +56,7 @@ TargetNode::TargetNode() : Node("target_node")
   target_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("target", 1);
   // ---------- timers ----------
   main_timer_ = this->create_wall_timer(100ms, [this]() { loop(); });
+  start_time_ = this->now().seconds();
 }
 
 void TargetNode::declareAndInitParams()
@@ -71,6 +72,8 @@ void TargetNode::declareAndInitParams()
     RCLCPP_ERROR(this->get_logger(), "Failed to extract UAV ID from name '%s': %s", uav_name_.c_str(), e.what());
     uav_id_ = 0;
   }
+  declare_parameter("target_center_x", 0.0);
+  declare_parameter("target_center_y", 0.0);
   declare_parameter("target_radius", 5.0);
   declare_parameter("target_period", 60.0);
   declare_parameter("target_p_gain", 1.0);
@@ -116,15 +119,17 @@ void TargetNode::declareAndInitParams()
 
 void TargetNode::loop()
 {
-  auto time = this->get_clock()->now().seconds();
+  auto time = this->get_clock()->now().seconds()-start_time_;
   nav_msgs::msg::Odometry target_msg;
+  double center_x = get_parameter("target_center_x").as_double();
+  double center_y = get_parameter("target_center_y").as_double();
   double r_traj = get_parameter("target_radius").as_double();
   double T_traj = get_parameter("target_period").as_double();
   target_msg.header.stamp = this->get_clock()->now();
   target_msg.header.frame_id = "common_origin";
-  target_msg.pose.pose.position.x = r_traj * cos(target_phase_ + 2 * M_PI * time / T_traj);
-  target_msg.pose.pose.position.y = r_traj * sin(target_phase_ + 2 * M_PI * time / T_traj);
-  double theta = atan2(target_msg.pose.pose.position.y, target_msg.pose.pose.position.x);
+  target_msg.pose.pose.position.x = center_x + r_traj * cos(target_phase_ + 2 * M_PI * time / T_traj);
+  target_msg.pose.pose.position.y = center_y + r_traj * sin(target_phase_ + 2 * M_PI * time / T_traj);
+  double theta = atan2(target_msg.pose.pose.position.y - center_y, target_msg.pose.pose.position.x - center_x);
   target_msg.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(0, 0, sin(theta / 2), cos(theta / 2)));
   target_msg.twist.twist.linear.x = -2 * M_PI / T_traj * r_traj * sin(target_phase_ + 2 * M_PI * time / T_traj);
   target_msg.twist.twist.linear.y = 2 * M_PI / T_traj * r_traj * cos(target_phase_ + 2 * M_PI * time / T_traj);
