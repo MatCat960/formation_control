@@ -158,6 +158,7 @@ void FormationNode::declareAndInitParams()
   declare_parameter("obstacle_avoidance_gain", 1.0);
   declare_parameter("clf_enabled", true);
   declare_parameter("formation_clf_gain", 0.1);
+  declare_parameter("formation_clf_slack_gain", 1.0);
   declare_parameter("formation_radius", 3.0);
   declare_parameter("formation_type", 0);
   declare_parameter("verbose", true);
@@ -181,6 +182,7 @@ void FormationNode::declareAndInitParams()
   formation_parameters->obstacle_avoidance_gain = get_parameter("obstacle_avoidance_gain").as_double();
   formation_parameters->clf_enabled = get_parameter("clf_enabled").as_bool();
   formation_parameters->formation_clf_gain = get_parameter("formation_clf_gain").as_double();
+  formation_parameters->formation_clf_slack_gain = get_parameter("formation_clf_slack_gain").as_double();
   formation_parameters->formation_radius = get_parameter("formation_radius").as_double();
   formation_parameters->formation_type = get_parameter("formation_type").as_int();
   formation_parameters->verbose = get_parameter("verbose").as_bool();

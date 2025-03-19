@@ -14,6 +14,7 @@ namespace formation_control
     double obstacle_avoidance_gain = std::numeric_limits<double>::signaling_NaN();
     bool clf_enabled = false;
     double formation_clf_gain = std::numeric_limits<double>::signaling_NaN();
+    double formation_clf_slack_gain = std::numeric_limits<double>::signaling_NaN();
     double formation_radius = std::numeric_limits<double>::signaling_NaN();
     int formation_type = std::numeric_limits<int>::signaling_NaN();
     bool verbose = false;

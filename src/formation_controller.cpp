@@ -93,7 +93,7 @@ namespace formation_control
         K = 2 * ((d - params_->formation_radius) / d) * (my_position - center) / (neighbors_number + 1.0);
         constraint_matrix_(constraints_number - 1, 0) = neighbors_number * K(0);
         constraint_matrix_(constraints_number - 1, 1) = neighbors_number * K(1);
-        constraint_matrix_(constraints_number - 1, 2) = -1.0;
+        constraint_matrix_(constraints_number - 1, 2) = -params_->formation_clf_slack_gain;
 
         constraint_upperbound_(constraints_number - 1) = K.dot(neighbors_velocity_sum) - params_->formation_clf_gain * V;
         h_out.push_back(V);
@@ -108,8 +108,8 @@ namespace formation_control
         V = z.squaredNorm();
         constraint_matrix_(constraints_number - 1, 0) = 2 * z(0);
         constraint_matrix_(constraints_number - 1, 1) = 2 * z(1);
-        constraint_matrix_(constraints_number - 1, 2) = -1.0;
-        constraint_upperbound_(constraints_number - 1) = 2*z.dot(target_velocity)-params_->formation_clf_gain * V;
+        constraint_matrix_(constraints_number - 1, 2) = -params_->formation_clf_slack_gain;
+        constraint_upperbound_(constraints_number - 1) = 2 * z.dot(target_velocity) - params_->formation_clf_gain * V;
         h_out.push_back(V);
       }
     }
